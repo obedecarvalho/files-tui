@@ -35,6 +35,7 @@ type column struct {
 type model struct {
 	columns                                    []column
 	focus                                      int
+	noRoot                                     bool
 	hidden                                     bool
 	order, width, height, start, previewOffset int
 	editing                                    bool
@@ -166,6 +167,9 @@ func (m *model) back() {
 		m.focus--
 		m.previewOffset = 0
 		m.start = -1
+		return
+	}
+	if !m.noRoot {
 		return
 	}
 	c := m.current()
@@ -493,13 +497,17 @@ func (m model) View() string {
 }
 
 func main() {
-	if len(os.Args) > 2 {
-		fmt.Fprintln(os.Stderr, "Uso: files-tui [diretório]")
-		os.Exit(2)
-	}
 	path := "."
-	if len(os.Args) == 2 {
-		path = os.Args[1]
+	noRoot, hasPath := false, false
+	for _, arg := range os.Args[1:] {
+		if arg == "--no-root" {
+			noRoot = true
+		} else if !hasPath && !strings.HasPrefix(arg, "-") {
+			path, hasPath = arg, true
+		} else {
+			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [diretório]")
+			os.Exit(2)
+		}
 	}
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -511,7 +519,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	m := model{columns: []column{c}, start: -1}
+	m := model{columns: []column{c}, start: -1, noRoot: noRoot}
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

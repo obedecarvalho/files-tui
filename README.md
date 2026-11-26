@@ -15,6 +15,8 @@ Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./fi
 
 Sem argumento, abre o diretório atual. A interface não altera arquivos nem executa arquivos selecionados.
 
+Por padrão, não é possível voltar acima do diretório inicial. Use `./files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
+
 ## Testes
 
 Na raiz do projeto, execute todos os testes com:

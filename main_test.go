@@ -133,3 +133,21 @@ func TestLookaheadAndPreservedColumns(t *testing.T) {
 		t.Fatal("changing selection should discard stale child columns")
 	}
 }
+
+func TestInitialDirectoryBoundary(t *testing.T) {
+	d := t.TempDir()
+	c, err := loadColumn(d, "", false, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}, start: -1}
+	m.back()
+	if m.current().path != d || len(m.columns) != 1 {
+		t.Fatal("default navigation escaped the initial directory")
+	}
+	m.noRoot = true
+	m.back()
+	if m.current().path != filepath.Dir(d) || len(m.columns) != 2 {
+		t.Fatal("--no-root should allow navigation to the parent")
+	}
+}

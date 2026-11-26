@@ -240,9 +240,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.refilter("")
 		case "pgdown":
-			m.previewOffset += max(1, m.height-6)
+			lines := preview(c.path, c.chosen())
+			m.previewOffset = min(m.previewOffset+3, max(0, len(lines)-max(1, m.height-2)))
 		case "pgup":
-			m.previewOffset = max(0, m.previewOffset-max(1, m.height-6))
+			m.previewOffset = max(0, m.previewOffset-3)
 		case "[":
 			if m.start < 0 {
 				m.start = m.autoStart()

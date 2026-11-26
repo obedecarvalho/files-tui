@@ -34,7 +34,7 @@ Para ver os testes individualmente, use `go test -v ./...`. Para executar també
 | ←, h ou Backspace | Voltar ao diretório pai |
 | g / G | Primeiro / último item |
 | [ / ] | Deslocar colunas manualmente |
-| Page Up / Page Down | Rolar prévia |
+| Page Up / Page Down | Rolar prévia em até três linhas |
 | . | Alternar arquivos ocultos |
 | / | Filtrar nomes; Enter confirma e Esc limpa |
 | s | Alternar ordenação por nome, tamanho e data |

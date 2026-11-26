@@ -76,3 +76,25 @@ func TestNavigationFilterAndPreview(t *testing.T) {
 		t.Fatal("missing entry in view")
 	}
 }
+
+func TestPreviewScrollIsBounded(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(filepath.Join(d, "file"), []byte(strings.Repeat("linha\n", 20)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := loadColumn(d, "", false, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}, height: 10, width: 80, start: -1}
+	for i := 0; i < 100; i++ {
+		updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+		m = updated.(model)
+	}
+	end := m.previewOffset
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	m = updated.(model)
+	if m.previewOffset != end-3 {
+		t.Fatalf("rolagem para cima: %d, esperado %d", m.previewOffset, end-3)
+	}
+}

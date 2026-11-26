@@ -2,38 +2,29 @@
 
 Navegador de arquivos para Linux em Go, com colunas Miller e prévia de arquivos.
 
-## Compilar e executar
+## Instalação e execução
 
-Requisitos: Linux, Go 1.26.4 ou posterior e acesso à internet para baixar as dependências na primeira compilação. Para usar as receitas abaixo, instale também o `just`. Na raiz do projeto, execute:
+Os binários para Linux AMD64 e ARM64 são publicados nas releases do GitHub, com os nomes `files-tui-linux-amd64` e `files-tui-linux-arm64`. Baixe o arquivo correspondente à sua arquitetura, dê permissão de execução e execute-o, por exemplo:
 
 ```sh
-just build
-./bin/files-tui
+chmod +x files-tui-linux-amd64
+mv files-tui-linux-amd64 files-tui
+./files-tui
 ```
 
-Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./bin/files-tui /home`. Também é possível executar sem gerar um binário com `just run` ou `just run /home`.
+Para compilar o projeto ou contribuir com o desenvolvimento, consulte [DEV.md](DEV.md).
 
-Os binários para Linux AMD64 e ARM64 também estão disponíveis nas releases do GitHub. Ao enviar uma nova tag, o GitHub Actions verifica a formatação, executa a análise estática e os testes, compila os binários e cria uma release com eles.
+Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./files-tui /home`.
 
 Sem argumento, abre o diretório atual. A interface não altera arquivos nem executa arquivos selecionados.
 
-Por padrão, não é possível voltar acima do diretório inicial. Use `./bin/files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
+Por padrão, não é possível voltar acima do diretório inicial. Use `./files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
 
 Ao sair, o caminho absoluto do item selecionado é escrito na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Use `--quiet` para desativar essa saída.
 
-Use `--reload` para atualizar automaticamente a listagem e, quando ativados, os estados Git a cada 5 segundos, por exemplo `./bin/files-tui --reload /home`.
+Use `--reload` para atualizar automaticamente a listagem e, quando ativados, os estados Git a cada 5 segundos, por exemplo `./files-tui --reload /home`.
 
 Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao iniciar ou pressione `Ctrl+g` para alterná-los durante a navegação.
-
-## Testes
-
-Na raiz do projeto, execute todos os testes com:
-
-```sh
-just test
-```
-
-Para ver os testes individualmente, use `go test -v ./...`. Use `just vet` para a análise estática, `just fmt` para formatar o código e `just check` para verificar a formatação, executar a análise estática e rodar os testes. Execute `just --list` para listar as receitas disponíveis.
 
 ## Controles
 

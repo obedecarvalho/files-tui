@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -37,6 +38,7 @@ type model struct {
 	git                                        map[string]gitStatus
 	focus                                      int
 	noRoot                                     bool
+	reload                                     bool
 	hidden                                     bool
 	order, width, height, start, previewOffset int
 	editing                                    bool
@@ -116,6 +118,15 @@ func (m *model) refresh() {
 			continue
 		}
 		m.columns[i] = c
+		if i+1 < len(m.columns) {
+			e := c.chosen()
+			if e == nil || e.err != nil || e.info == nil || !e.info.IsDir() || filepath.Join(c.path, e.name) != m.columns[i+1].path {
+				m.columns = m.columns[:i+1]
+				m.focus = min(m.focus, i)
+				m.previewOffset = 0
+				break
+			}
+		}
 	}
 }
 func (m *model) refilter(filter string) {
@@ -206,9 +217,27 @@ func (m *model) back() {
 	m.previewOffset = 0
 	m.start = -1
 }
-func (m model) Init() tea.Cmd { return nil }
+
+type reloadMsg time.Time
+
+func reloadTick() tea.Cmd {
+	return tea.Tick(5*time.Second, func(t time.Time) tea.Msg { return reloadMsg(t) })
+}
+
+func (m model) Init() tea.Cmd {
+	if m.reload {
+		return reloadTick()
+	}
+	return nil
+}
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case reloadMsg:
+		if m.reload {
+			m.refresh()
+			m.refreshGit()
+			return m, reloadTick()
+		}
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
@@ -533,16 +562,18 @@ func (m model) View() string {
 
 func main() {
 	path := "."
-	noRoot, quiet, hasPath := false, false, false
+	noRoot, quiet, reload, hasPath := false, false, false, false
 	for _, arg := range os.Args[1:] {
 		if arg == "--no-root" {
 			noRoot = true
 		} else if arg == "--quiet" {
 			quiet = true
+		} else if arg == "--reload" {
+			reload = true
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--quiet] [diretório]")
+			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--quiet] [--reload] [diretório]")
 			os.Exit(2)
 		}
 	}
@@ -556,7 +587,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	m := model{columns: []column{c}, start: -1, noRoot: noRoot}
+	m := model{columns: []column{c}, start: -1, noRoot: noRoot, reload: reload}
 	m.refreshGit()
 	final, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
 	if err != nil {

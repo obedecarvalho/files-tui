@@ -170,3 +170,38 @@ func TestSelectedPath(t *testing.T) {
 		t.Fatalf("empty selection path: %q", got)
 	}
 }
+
+func TestReload(t *testing.T) {
+	d := t.TempDir()
+	if err := os.Mkdir(filepath.Join(d, "child"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	c, err := loadColumn(d, "", false, 0, "child")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}, reload: true}
+	if m.Init() == nil || (model{}).Init() != nil {
+		t.Fatal("reload timer should only start when enabled")
+	}
+	m.follow()
+	if err := os.WriteFile(filepath.Join(d, "child", "new"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	updated, cmd := m.Update(reloadMsg{})
+	m = updated.(model)
+	if cmd == nil || len(m.current().entries) != 1 || m.current().entries[0].name != "new" {
+		t.Fatal("reload did not update the current column and schedule another tick")
+	}
+	if err := os.Remove(filepath.Join(d, "child", "new")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(d, "child")); err != nil {
+		t.Fatal(err)
+	}
+	updated, _ = m.Update(reloadMsg{})
+	m = updated.(model)
+	if len(m.columns) != 1 || m.focus != 0 {
+		t.Fatal("reload should discard columns for a removed directory")
+	}
+}

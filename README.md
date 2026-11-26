@@ -19,6 +19,8 @@ Por padrão, não é possível voltar acima do diretório inicial. Use `./files-
 
 Ao sair, o caminho absoluto do item selecionado é escrito na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Use `--quiet` para desativar essa saída.
 
+Use `--reload` para atualizar automaticamente a listagem e os estados Git a cada 5 segundos, por exemplo `./files-tui --reload /home`.
+
 ## Testes
 
 Na raiz do projeto, execute todos os testes com:

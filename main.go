@@ -63,6 +63,7 @@ var helpLines = []string{
 	"Enter / Esc   Confirmar / limpar filtro",
 	"s             Alternar ordenação",
 	"r             Atualizar listagem e estados Git",
+	"v / e / d     Visualizar / editar / diferenças Git",
 	"Ctrl+g        Alternar indicadores Git",
 	"?             Abrir / fechar atalhos",
 	"Espaço        Selecionar e sair",
@@ -260,6 +261,14 @@ func (m model) Init() tea.Cmd {
 }
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case externalFinished:
+		m.refresh()
+		if m.showGit {
+			m.refreshGit()
+		}
+		if msg.err != nil {
+			m.message = msg.err.Error()
+		}
 	case reloadMsg:
 		if m.reload {
 			m.refresh()
@@ -323,6 +332,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			oldSelection = e.name
 		}
 		switch key {
+		case "v", "e", "d":
+			e := c.chosen()
+			if e == nil {
+				m.message = "Nenhum item selecionado"
+				break
+			}
+			if e.err != nil || e.info == nil {
+				m.message = "Item inacessível"
+				break
+			}
+			if key != "d" && !e.info.Mode().IsRegular() {
+				m.message = "Selecione um arquivo comum"
+				break
+			}
+			return m, externalCommand(key, filepath.Join(c.path, e.name), c.path)
 		case "?":
 			m.showHelp = true
 			m.helpOffset = 0

@@ -21,7 +21,7 @@ Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./fi
 
 Use `./files-tui --help` para exibir a versão e as opções disponíveis.
 
-Sem argumento, abre o diretório atual. A interface não altera arquivos nem executa arquivos selecionados.
+Sem argumento, abre o diretório atual. A navegação não altera arquivos nem executa arquivos selecionados; o atalho `e` abre um editor que pode alterá-los.
 
 Por padrão, não é possível voltar acima do diretório inicial. Use `./files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
 
@@ -45,12 +45,19 @@ Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao
 | / | Filtrar nomes; Enter confirma e Esc limpa |
 | s | Alternar ordenação por nome, tamanho e data |
 | r | Atualizar listagem |
+| v | Visualizar arquivo com $PAGER |
+| e | Editar arquivo com $EDITOR |
+| d | Mostrar diferenças Git do item selecionado |
 | Ctrl+g | Alternar indicadores Git |
 | ? | Abrir ou fechar a lista de atalhos; Esc também fecha |
 | Espaço | Selecionar o item em foco e sair |
 | q ou Ctrl+C | Sair |
 
 Na lista de atalhos, use ↑/↓, k/j ou Page Up/Page Down para rolar.
+
+Os programas externos usam o terminal e, ao terminar, retornam à interface. Os atalhos `v` e `e` exigem, respectivamente, que `$PAGER` e `$EDITOR` estejam definidos; caso contrário, uma mensagem é exibida. As variáveis aceitam argumentos e aspas, sem expansão de shell. Visualização e edição exigem um arquivo comum. A listagem e os indicadores Git ativos são atualizados no retorno.
+
+O atalho `d` funciona mesmo sem `--git` e mostra separadamente alterações staged (índice em relação ao HEAD) e não staged (arquivos em relação ao índice), também para diretórios. Arquivos não rastreados são indicados, mas não aparecem no diff. Fora de um repositório, é exibida uma mensagem. A comparação entre dois arquivos arbitrários não está disponível.
 
 A prévia mostra metadados e até 256 KiB de texto UTF-8. Links simbólicos são marcados com `@`; diretórios, com `/`. Arquivos binários ou texto em outra codificação mostram apenas metadados.
 

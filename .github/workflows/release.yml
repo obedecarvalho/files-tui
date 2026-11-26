@@ -28,10 +28,12 @@ jobs:
       - name: Testar
         run: go test ./...
       - name: Compilar binários
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
           mkdir -p dist
           for arch in amd64 arm64; do
-            GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -o "dist/files-tui-linux-$arch" .
+            GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -ldflags="-X main.version=$TAG" -o "dist/files-tui-linux-$arch" .
           done
       - name: Publicar release
         env:

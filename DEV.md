@@ -14,6 +14,7 @@ just build
 ```
 
 Também é possível executar sem gerar um binário com `just run` ou `just run /home`.
+Compilações locais exibem a versão `dev` em `--help`; nas releases, a versão corresponde à tag.
 
 ## Testes e verificações
 

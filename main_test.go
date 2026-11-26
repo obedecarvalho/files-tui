@@ -2,12 +2,30 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+func TestHelp(t *testing.T) {
+	if os.Getenv("FILES_TUI_TEST_HELP") == "1" {
+		os.Args = []string{"files-tui", "--help"}
+		main()
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=^TestHelp$")
+	cmd.Env = append(os.Environ(), "FILES_TUI_TEST_HELP=1")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("help failed: %v\n%s", err, output)
+	}
+	if got := string(output); !strings.Contains(got, "files-tui "+version) || !strings.Contains(got, "Uso: files-tui") || !strings.Contains(got, "--help") {
+		t.Fatalf("unexpected help: %s", got)
+	}
+}
 
 func TestLoadFilterSortAndLinks(t *testing.T) {
 	d := t.TempDir()

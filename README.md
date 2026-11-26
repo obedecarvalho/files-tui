@@ -16,6 +16,8 @@ Para compilar o projeto ou contribuir com o desenvolvimento, consulte [DEV.md](D
 
 Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./files-tui /home`.
 
+Use `./files-tui --help` para exibir a versão e as opções disponíveis.
+
 Sem argumento, abre o diretório atual. A interface não altera arquivos nem executa arquivos selecionados.
 
 Por padrão, não é possível voltar acima do diretório inicial. Use `./files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.

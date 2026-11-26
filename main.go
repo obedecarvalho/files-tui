@@ -19,6 +19,8 @@ import (
 
 const previewLimit = 256 * 1024
 
+var version = "dev"
+
 type entry struct {
 	name string
 	info os.FileInfo
@@ -580,6 +582,12 @@ func (m model) View() string {
 }
 
 func main() {
+	for _, arg := range os.Args[1:] {
+		if arg == "--help" {
+			fmt.Printf("files-tui %s\nUso: files-tui [--no-root] [--quiet] [--reload] [--git] [--help] [diretório]\n", version)
+			return
+		}
+	}
 	path := "."
 	noRoot, quiet, reload, showGit, hasPath := false, false, false, false, false
 	for _, arg := range os.Args[1:] {
@@ -594,7 +602,7 @@ func main() {
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--quiet] [--reload] [--git] [diretório]")
+			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--quiet] [--reload] [--git] [--help] [diretório]")
 			os.Exit(2)
 		}
 	}

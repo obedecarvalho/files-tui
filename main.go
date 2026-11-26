@@ -89,6 +89,13 @@ func loadColumn(path, filter string, hidden bool, order int, selected string) (c
 }
 
 func (m *model) current() *column { return &m.columns[m.focus] }
+func (m *model) selectedPath() string {
+	c := m.current()
+	if e := c.chosen(); e != nil {
+		return filepath.Join(c.path, e.name)
+	}
+	return c.path
+}
 func (c *column) chosen() *entry {
 	if len(c.entries) == 0 {
 		return nil
@@ -498,14 +505,16 @@ func (m model) View() string {
 
 func main() {
 	path := "."
-	noRoot, hasPath := false, false
+	noRoot, quiet, hasPath := false, false, false
 	for _, arg := range os.Args[1:] {
 		if arg == "--no-root" {
 			noRoot = true
+		} else if arg == "--quiet" {
+			quiet = true
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [diretório]")
+			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--quiet] [diretório]")
 			os.Exit(2)
 		}
 	}
@@ -520,8 +529,13 @@ func main() {
 		os.Exit(1)
 	}
 	m := model{columns: []column{c}, start: -1, noRoot: noRoot}
-	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
+	final, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+	if !quiet {
+		result := final.(model)
+		fmt.Println(result.selectedPath())
 	}
 }

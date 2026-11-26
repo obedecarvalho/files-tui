@@ -151,3 +151,22 @@ func TestInitialDirectoryBoundary(t *testing.T) {
 		t.Fatal("--no-root should allow navigation to the parent")
 	}
 }
+
+func TestSelectedPath(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(filepath.Join(d, "file"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := loadColumn(d, "", false, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}}
+	if got := m.selectedPath(); got != filepath.Join(d, "file") {
+		t.Fatalf("selected path: %q", got)
+	}
+	m.refilter("no match")
+	if got := m.selectedPath(); got != d {
+		t.Fatalf("empty selection path: %q", got)
+	}
+}

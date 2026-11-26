@@ -13,6 +13,8 @@ just build
 
 Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./bin/files-tui /home`. Também é possível executar sem gerar um binário com `just run` ou `just run /home`.
 
+Os binários para Linux AMD64 e ARM64 também estão disponíveis nas releases do GitHub. Ao enviar uma nova tag, o GitHub Actions verifica a formatação, executa a análise estática e os testes, compila os binários e cria uma release com eles.
+
 Sem argumento, abre o diretório atual. A interface não altera arquivos nem executa arquivos selecionados.
 
 Por padrão, não é possível voltar acima do diretório inicial. Use `./bin/files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.

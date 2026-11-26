@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Verificar formatação
+        run: |
+          files="$(gofmt -l *.go)"
+          if [ -n "$files" ]; then
+            printf 'Arquivos não formatados:\n%s\n' "$files"
+            exit 1
+          fi
+      - name: Análise estática
+        run: go vet ./...
+      - name: Testar
+        run: go test ./...
+      - name: Compilar binários
+        run: |
+          mkdir -p dist
+          for arch in amd64 arm64; do
+            GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -o "dist/files-tui-linux-$arch" .
+          done
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" dist/* --verify-tag --generate-notes

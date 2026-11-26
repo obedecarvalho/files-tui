@@ -3,7 +3,10 @@ default:
     @just --list
 
 build:
-    go build -o files-tui .
+    go build -o bin/files-tui .
 
 test:
     go test ./...
+
+run:
+    go run .

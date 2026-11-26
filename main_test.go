@@ -98,3 +98,38 @@ func TestPreviewScrollIsBounded(t *testing.T) {
 		t.Fatalf("rolagem para cima: %d, esperado %d", m.previewOffset, end-3)
 	}
 }
+
+func TestLookaheadAndPreservedColumns(t *testing.T) {
+	d := t.TempDir()
+	if err := os.Mkdir(filepath.Join(d, "child"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d, "child", "inside"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d, "other"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := loadColumn(d, "", false, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}, start: -1, width: 120, height: 12}
+	if !strings.Contains(m.View(), "inside") || m.focus != 0 {
+		t.Fatal("lookahead should show the child without changing focus")
+	}
+	m.follow()
+	before := strings.Count(strings.Split(m.View(), "\n")[1], "┌")
+	m.back()
+	if len(m.columns) != 2 || m.focus != 0 || !strings.Contains(m.View(), "inside") {
+		t.Fatal("back should preserve the child column")
+	}
+	if after := strings.Count(strings.Split(m.View(), "\n")[1], "┌"); after != before {
+		t.Fatalf("back changed the number of visible columns: %d to %d", before, after)
+	}
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = updated.(model)
+	if len(m.columns) != 1 || strings.Contains(m.View(), "inside") {
+		t.Fatal("changing selection should discard stale child columns")
+	}
+}

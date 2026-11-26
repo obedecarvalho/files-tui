@@ -34,6 +34,7 @@ type column struct {
 
 type model struct {
 	columns                                    []column
+	focus                                      int
 	hidden                                     bool
 	order, width, height, start, previewOffset int
 	editing                                    bool
@@ -86,7 +87,7 @@ func loadColumn(path, filter string, hidden bool, order int, selected string) (c
 	return c, nil
 }
 
-func (m *model) current() *column { return &m.columns[len(m.columns)-1] }
+func (m *model) current() *column { return &m.columns[m.focus] }
 func (c *column) chosen() *entry {
 	if len(c.entries) == 0 {
 		return nil
@@ -120,6 +121,13 @@ func (m *model) refilter(filter string) {
 		return
 	}
 	*c = next
+	newName := ""
+	if e := c.chosen(); e != nil {
+		newName = e.name
+	}
+	if name != newName {
+		m.columns = m.columns[:m.focus+1]
+	}
 	m.previewOffset = 0
 }
 func (m *model) follow() {
@@ -136,19 +144,26 @@ func (m *model) follow() {
 		m.message = "Não é um diretório"
 		return
 	}
-	next, err := loadColumn(filepath.Join(c.path, e.name), "", m.hidden, m.order, "")
+	path := filepath.Join(c.path, e.name)
+	if m.focus+1 < len(m.columns) && m.columns[m.focus+1].path == path {
+		m.focus++
+		m.previewOffset = 0
+		m.start = -1
+		return
+	}
+	next, err := loadColumn(path, "", m.hidden, m.order, "")
 	if err != nil {
 		m.message = err.Error()
 		return
 	}
-	m.columns = append(m.columns, next)
+	m.columns = append(m.columns[:m.focus+1], next)
+	m.focus++
 	m.previewOffset = 0
 	m.start = -1
 }
 func (m *model) back() {
-	if len(m.columns) > 1 {
-		m.columns = m.columns[:len(m.columns)-1]
-		m.refresh()
+	if m.focus > 0 {
+		m.focus--
 		m.previewOffset = 0
 		m.start = -1
 		return
@@ -163,7 +178,7 @@ func (m *model) back() {
 		m.message = err.Error()
 		return
 	}
-	m.columns[0] = next
+	m.columns = append([]column{next}, m.columns...)
 	m.previewOffset = 0
 	m.start = -1
 }
@@ -198,6 +213,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.message = ""
 		c := m.current()
+		oldSelection := ""
+		if e := c.chosen(); e != nil {
+			oldSelection = e.name
+		}
 		switch key {
 		case "q":
 			return m, tea.Quit
@@ -255,12 +274,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.start = min(len(m.columns)-1, m.start+1)
 		}
+		if key == "up" || key == "k" || key == "down" || key == "j" || key == "g" || key == "G" || key == "." || key == "s" || key == "r" {
+			newSelection := ""
+			if e := m.current().chosen(); e != nil {
+				newSelection = e.name
+			}
+			if oldSelection != newSelection {
+				m.columns = m.columns[:m.focus+1]
+			}
+		}
 	}
 	return m, nil
 }
 
 func (m model) slots() int     { return max(1, m.width/24) }
-func (m model) autoStart() int { return max(0, len(m.columns)-m.slots()) }
+func (m model) autoStart() int { return max(0, m.focus+3-m.slots()) }
 
 func preview(path string, e *entry) []string {
 	if e == nil {
@@ -334,14 +362,21 @@ func (m model) View() string {
 		return header
 	}
 	bodyHeight := max(0, m.height-2)
+	columns := append([]column(nil), m.columns...)
+	c := &columns[len(columns)-1]
+	var next column
+	if e := c.chosen(); e != nil && e.err == nil && e.info != nil && e.info.IsDir() {
+		next, _ = loadColumn(filepath.Join(c.path, e.name), "", m.hidden, m.order, "")
+	}
+	columns = append(columns, next)
 	slots := m.slots()
 	start := m.start
 	if start < 0 {
 		start = m.autoStart()
 	}
-	start = min(start, len(m.columns)-1)
-	count := min(slots, len(m.columns)-start)
-	showPreview := start+count == len(m.columns) && slots > count
+	start = min(start, len(columns)-1)
+	count := min(slots, len(columns)-start)
+	showPreview := start+count == len(columns) && slots > count
 	if showPreview {
 		count++
 	}
@@ -353,19 +388,31 @@ func (m model) View() string {
 		if n == count-1 {
 			width = m.width - colWidth*(count-1)
 		}
+		sharedRight := n < count-1 && width >= 3 && colWidth >= 3 && bodyHeight >= 3
+		if sharedRight {
+			width++
+		}
 		contentWidth := max(0, width-1)
+		boxed := width >= 3 && bodyHeight >= 3
+		contentHeight := bodyHeight
+		if boxed {
+			contentWidth = width - 2
+			contentHeight = bodyHeight - 2
+		}
 		var lines []string
-		if idx < len(m.columns) {
-			c := m.columns[idx]
+		if idx < len(columns) {
+			c := columns[idx]
 			offset := c.offset
 			if c.selected < offset {
 				offset = c.selected
 			}
-			if c.selected >= offset+bodyHeight && bodyHeight > 0 {
-				offset = c.selected - bodyHeight + 1
+			if c.selected >= offset+contentHeight && contentHeight > 0 {
+				offset = c.selected - contentHeight + 1
 			}
-			m.columns[idx].offset = offset
-			for row := 0; row < bodyHeight; row++ {
+			if idx < len(m.columns) {
+				m.columns[idx].offset = offset
+			}
+			for row := 0; row < contentHeight; row++ {
 				i := offset + row
 				text := ""
 				if i < len(c.entries) {
@@ -377,14 +424,18 @@ func (m model) View() string {
 					if e.info != nil && e.info.IsDir() {
 						text += "/"
 					}
-					if i == c.selected {
+					if i == c.selected && idx < len(m.columns) {
 						text = "> " + text
 					} else {
 						text = "  " + text
 					}
 					text = fit(text, contentWidth)
-					if i == c.selected {
-						text = lipgloss.NewStyle().Reverse(true).Render(text)
+					if i == c.selected && idx < len(m.columns) {
+						style := lipgloss.NewStyle().Reverse(true)
+						if idx == m.focus {
+							style = style.Foreground(lipgloss.Color("2")).Bold(true)
+						}
+						text = style.Render(text)
 					} else if e.info != nil && e.info.IsDir() {
 						text = lipgloss.NewStyle().Foreground(lipgloss.Color("4")).Render(text)
 					}
@@ -397,13 +448,34 @@ func (m model) View() string {
 			c := m.current()
 			p := preview(c.path, c.chosen())
 			offset := min(m.previewOffset, max(0, len(p)-1))
-			for row := 0; row < bodyHeight; row++ {
+			for row := 0; row < contentHeight; row++ {
 				text := ""
 				if offset+row < len(p) {
 					text = p[offset+row]
 				}
 				lines = append(lines, fit(text, contentWidth))
 			}
+		}
+		if boxed {
+			color := lipgloss.Color("7")
+			if idx == m.focus {
+				color = lipgloss.Color("2")
+			}
+			border := lipgloss.NewStyle().Foreground(color)
+			leftBorder := border
+			if idx-1 == m.focus {
+				leftBorder = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+			}
+			rightTop, rightSide, rightBottom := "┐", "│", "┘"
+			if sharedRight {
+				rightTop, rightSide, rightBottom = "", "", ""
+			}
+			rows[0] += leftBorder.Render("┌") + border.Render(strings.Repeat("─", width-2)+rightTop)
+			for row, line := range lines {
+				rows[row+1] += leftBorder.Render("│") + line + border.Render(rightSide)
+			}
+			rows[bodyHeight-1] += leftBorder.Render("└") + border.Render(strings.Repeat("─", width-2)+rightBottom)
+			continue
 		}
 		for row := range rows {
 			rows[row] += lines[row]

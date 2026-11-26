@@ -34,6 +34,7 @@ type column struct {
 
 type model struct {
 	columns                                    []column
+	git                                        map[string]gitStatus
 	focus                                      int
 	noRoot                                     bool
 	hidden                                     bool
@@ -166,6 +167,12 @@ func (m *model) follow() {
 	}
 	m.columns = append(m.columns[:m.focus+1], next)
 	m.focus++
+	for path, status := range gitStatuses(next.path) {
+		if m.git == nil {
+			m.git = make(map[string]gitStatus)
+		}
+		m.git[path] = status
+	}
 	m.previewOffset = 0
 	m.start = -1
 }
@@ -190,6 +197,12 @@ func (m *model) back() {
 		return
 	}
 	m.columns = append([]column{next}, m.columns...)
+	for path, status := range gitStatuses(next.path) {
+		if m.git == nil {
+			m.git = make(map[string]gitStatus)
+		}
+		m.git[path] = status
+	}
 	m.previewOffset = 0
 	m.start = -1
 }
@@ -265,6 +278,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.refresh()
 		case "r":
 			m.refresh()
+			m.refreshGit()
 		case "/":
 			m.editing = true
 		case "esc":
@@ -428,6 +442,7 @@ func (m model) View() string {
 				text := ""
 				if i < len(c.entries) {
 					e := c.entries[i]
+					status := m.statusFor(filepath.Join(c.path, e.name))
 					text = e.name
 					if e.link {
 						text += "@"
@@ -435,21 +450,34 @@ func (m model) View() string {
 					if e.info != nil && e.info.IsDir() {
 						text += "/"
 					}
+					if marker := status.marker(); marker != "" {
+						text = "[" + marker + "] " + text
+					}
 					if i == c.selected && idx < len(m.columns) {
 						text = "> " + text
 					} else {
 						text = "  " + text
 					}
 					text = fit(text, contentWidth)
+					style := lipgloss.NewStyle()
+					if status.modified {
+						style = style.Foreground(lipgloss.Color("3"))
+					} else if status.added || status.staged {
+						style = style.Foreground(lipgloss.Color("2"))
+					} else if status.untracked {
+						style = style.Foreground(lipgloss.Color("6"))
+					} else if status.ignored {
+						style = style.Foreground(lipgloss.Color("8"))
+					} else if e.info != nil && e.info.IsDir() {
+						style = style.Foreground(lipgloss.Color("4"))
+					}
 					if i == c.selected && idx < len(m.columns) {
-						style := lipgloss.NewStyle().Reverse(true)
+						style = style.Reverse(true)
 						if idx == m.focus {
 							style = style.Foreground(lipgloss.Color("2")).Bold(true)
 						}
-						text = style.Render(text)
-					} else if e.info != nil && e.info.IsDir() {
-						text = lipgloss.NewStyle().Foreground(lipgloss.Color("4")).Render(text)
 					}
+					text = style.Render(text)
 				} else {
 					text = fit("", contentWidth)
 				}
@@ -529,6 +557,7 @@ func main() {
 		os.Exit(1)
 	}
 	m := model{columns: []column{c}, start: -1, noRoot: noRoot}
+	m.refreshGit()
 	final, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

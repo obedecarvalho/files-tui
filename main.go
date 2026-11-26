@@ -39,6 +39,7 @@ type model struct {
 	focus                                      int
 	noRoot                                     bool
 	reload                                     bool
+	showGit                                    bool
 	hidden                                     bool
 	order, width, height, start, previewOffset int
 	editing                                    bool
@@ -178,11 +179,13 @@ func (m *model) follow() {
 	}
 	m.columns = append(m.columns[:m.focus+1], next)
 	m.focus++
-	for path, status := range gitStatuses(next.path) {
-		if m.git == nil {
-			m.git = make(map[string]gitStatus)
+	if m.showGit {
+		for path, status := range gitStatuses(next.path) {
+			if m.git == nil {
+				m.git = make(map[string]gitStatus)
+			}
+			m.git[path] = status
 		}
-		m.git[path] = status
 	}
 	m.previewOffset = 0
 	m.start = -1
@@ -208,11 +211,13 @@ func (m *model) back() {
 		return
 	}
 	m.columns = append([]column{next}, m.columns...)
-	for path, status := range gitStatuses(next.path) {
-		if m.git == nil {
-			m.git = make(map[string]gitStatus)
+	if m.showGit {
+		for path, status := range gitStatuses(next.path) {
+			if m.git == nil {
+				m.git = make(map[string]gitStatus)
+			}
+			m.git[path] = status
 		}
-		m.git[path] = status
 	}
 	m.previewOffset = 0
 	m.start = -1
@@ -235,7 +240,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case reloadMsg:
 		if m.reload {
 			m.refresh()
-			m.refreshGit()
+			if m.showGit {
+				m.refreshGit()
+			}
 			return m, reloadTick()
 		}
 	case tea.WindowSizeMsg:
@@ -244,6 +251,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		key := msg.String()
 		if key == "ctrl+c" {
 			return m, tea.Quit
+		}
+		if key == "ctrl+g" {
+			m.showGit = !m.showGit
+			if m.showGit {
+				m.refreshGit()
+			}
+			return m, nil
 		}
 		if m.editing {
 			switch key {
@@ -307,7 +321,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.refresh()
 		case "r":
 			m.refresh()
-			m.refreshGit()
+			if m.showGit {
+				m.refreshGit()
+			}
 		case "/":
 			m.editing = true
 		case "esc":
@@ -471,7 +487,10 @@ func (m model) View() string {
 				text := ""
 				if i < len(c.entries) {
 					e := c.entries[i]
-					status := m.statusFor(filepath.Join(c.path, e.name))
+					var status gitStatus
+					if m.showGit {
+						status = m.statusFor(filepath.Join(c.path, e.name))
+					}
 					text = e.name
 					if e.link {
 						text += "@"
@@ -562,7 +581,7 @@ func (m model) View() string {
 
 func main() {
 	path := "."
-	noRoot, quiet, reload, hasPath := false, false, false, false
+	noRoot, quiet, reload, showGit, hasPath := false, false, false, false, false
 	for _, arg := range os.Args[1:] {
 		if arg == "--no-root" {
 			noRoot = true
@@ -570,10 +589,12 @@ func main() {
 			quiet = true
 		} else if arg == "--reload" {
 			reload = true
+		} else if arg == "--git" {
+			showGit = true
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--quiet] [--reload] [diretório]")
+			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--quiet] [--reload] [--git] [diretório]")
 			os.Exit(2)
 		}
 	}
@@ -587,8 +608,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	m := model{columns: []column{c}, start: -1, noRoot: noRoot, reload: reload}
-	m.refreshGit()
+	m := model{columns: []column{c}, start: -1, noRoot: noRoot, reload: reload, showGit: showGit}
+	if m.showGit {
+		m.refreshGit()
+	}
 	final, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

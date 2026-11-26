@@ -1,4 +1,4 @@
-module finder-tui
+module files-tui
 
 go 1.26.4
 

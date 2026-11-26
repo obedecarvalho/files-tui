@@ -4,32 +4,34 @@ Navegador de arquivos para Linux em Go, com colunas Miller e prévia de arquivos
 
 ## Compilar e executar
 
-Requisitos: Linux, Go 1.26.4 ou posterior e acesso à internet para baixar as dependências na primeira compilação. Na raiz do projeto, execute:
+Requisitos: Linux, Go 1.26.4 ou posterior e acesso à internet para baixar as dependências na primeira compilação. Para usar as receitas abaixo, instale também o `just`. Na raiz do projeto, execute:
 
 ```sh
-go build -o files-tui .
-./files-tui
+just build
+./bin/files-tui
 ```
 
-Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./files-tui /home`. Também é possível executar sem gerar um binário com `go run .` ou `go run . /home`.
+Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./bin/files-tui /home`. Também é possível executar sem gerar um binário com `just run` ou `just run /home`.
 
 Sem argumento, abre o diretório atual. A interface não altera arquivos nem executa arquivos selecionados.
 
-Por padrão, não é possível voltar acima do diretório inicial. Use `./files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
+Por padrão, não é possível voltar acima do diretório inicial. Use `./bin/files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
 
 Ao sair, o caminho absoluto do item selecionado é escrito na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Use `--quiet` para desativar essa saída.
 
-Use `--reload` para atualizar automaticamente a listagem e os estados Git a cada 5 segundos, por exemplo `./files-tui --reload /home`.
+Use `--reload` para atualizar automaticamente a listagem e, quando ativados, os estados Git a cada 5 segundos, por exemplo `./bin/files-tui --reload /home`.
+
+Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao iniciar ou pressione `Ctrl+g` para alterná-los durante a navegação.
 
 ## Testes
 
 Na raiz do projeto, execute todos os testes com:
 
 ```sh
-go test ./...
+just test
 ```
 
-Para ver os testes individualmente, use `go test -v ./...`. Para executar também a análise estática do Go, use `go vet ./...`.
+Para ver os testes individualmente, use `go test -v ./...`. Use `just vet` para a análise estática, `just fmt` para formatar o código e `just check` para verificar a formatação, executar a análise estática e rodar os testes. Execute `just --list` para listar as receitas disponíveis.
 
 ## Controles
 
@@ -45,6 +47,7 @@ Para ver os testes individualmente, use `go test -v ./...`. Para executar també
 | / | Filtrar nomes; Enter confirma e Esc limpa |
 | s | Alternar ordenação por nome, tamanho e data |
 | r | Atualizar listagem |
+| Ctrl+g | Alternar indicadores Git |
 | q ou Ctrl+C | Sair |
 
 A prévia mostra metadados e até 256 KiB de texto UTF-8. Links simbólicos são marcados com `@`; diretórios, com `/`. Arquivos binários ou texto em outra codificação mostram apenas metadados.

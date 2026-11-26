@@ -61,11 +61,16 @@ func TestGitStatuses(t *testing.T) {
 	}
 	m := model{columns: []column{c}, start: -1, width: 100, height: 10}
 	m.refreshGit()
+	if strings.Contains(m.View(), "[SM?]") {
+		t.Fatal("Git markers should be hidden by default")
+	}
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlG})
+	m = updated.(model)
 	if !strings.Contains(m.View(), "[SM?] dir/") {
 		t.Fatal("directory marker missing from view")
 	}
 	git("add", ".")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
 	m = updated.(model)
 	if got := m.git[filepath.Join(d, "dir")].marker(); got != "AS" {
 		t.Fatalf("refresh status: %q", got)
@@ -78,6 +83,11 @@ func TestGitStatuses(t *testing.T) {
 	}
 	if got := gitStatuses(d)[untracked].marker(); got != "AM" {
 		t.Fatalf("new staged file with unstaged changes: %q", got)
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlG})
+	m = updated.(model)
+	if m.showGit || strings.Contains(m.View(), "[AS]") {
+		t.Fatal("Ctrl+g should hide Git markers")
 	}
 }
 

@@ -25,7 +25,7 @@ Sem argumento, abre o diretório atual. A interface não altera arquivos nem exe
 
 Por padrão, não é possível voltar acima do diretório inicial. Use `./files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
 
-Ao sair, o caminho absoluto do item selecionado é escrito na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Use `--quiet` para desativar essa saída.
+Pressione `Espaço` para sair e escrever o caminho absoluto do item em foco na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Ao sair com `q` ou `Ctrl+C`, nenhum caminho é escrito.
 
 Use `--reload` para atualizar automaticamente a listagem e, quando ativados, os estados Git a cada 5 segundos, por exemplo `./files-tui --reload /home`.
 
@@ -46,7 +46,11 @@ Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao
 | s | Alternar ordenação por nome, tamanho e data |
 | r | Atualizar listagem |
 | Ctrl+g | Alternar indicadores Git |
+| ? | Abrir ou fechar a lista de atalhos; Esc também fecha |
+| Espaço | Selecionar o item em foco e sair |
 | q ou Ctrl+C | Sair |
+
+Na lista de atalhos, use ↑/↓, k/j ou Page Up/Page Down para rolar.
 
 A prévia mostra metadados e até 256 KiB de texto UTF-8. Links simbólicos são marcados com `@`; diretórios, com `/`. Arquivos binários ou texto em outra codificação mostram apenas metadados.
 

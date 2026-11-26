@@ -45,7 +45,28 @@ type model struct {
 	hidden                                     bool
 	order, width, height, start, previewOffset int
 	editing                                    bool
+	showHelp                                   bool
+	helpOffset                                 int
+	selected                                   bool
 	message                                    string
+}
+
+var helpLines = []string{
+	"↑/↓ ou k/j    Mover seleção",
+	"→, l, Enter   Entrar no diretório",
+	"←, h, Backspace   Voltar ao diretório pai",
+	"g / G         Primeiro / último item",
+	"[ / ]         Deslocar colunas",
+	"Page Up / Page Down   Rolar prévia",
+	".             Alternar arquivos ocultos",
+	"/             Filtrar nomes",
+	"Enter / Esc   Confirmar / limpar filtro",
+	"s             Alternar ordenação",
+	"r             Atualizar listagem e estados Git",
+	"Ctrl+g        Alternar indicadores Git",
+	"?             Abrir / fechar atalhos",
+	"Espaço        Selecionar e sair",
+	"q / Ctrl+c    Sair",
 }
 
 func loadColumn(path, filter string, hidden bool, order int, selected string) (column, error) {
@@ -254,6 +275,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if key == "ctrl+c" {
 			return m, tea.Quit
 		}
+		if m.showHelp {
+			switch key {
+			case "?", "esc":
+				m.showHelp = false
+			case "up", "k":
+				m.helpOffset = max(0, m.helpOffset-1)
+			case "down", "j":
+				m.helpOffset = min(max(0, len(helpLines)-max(1, m.height-2)), m.helpOffset+1)
+			case "pgup":
+				m.helpOffset = max(0, m.helpOffset-max(1, m.height-2))
+			case "pgdown":
+				m.helpOffset = min(max(0, len(helpLines)-max(1, m.height-2)), m.helpOffset+max(1, m.height-2))
+			}
+			return m, nil
+		}
 		if key == "ctrl+g" {
 			m.showGit = !m.showGit
 			if m.showGit {
@@ -287,6 +323,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			oldSelection = e.name
 		}
 		switch key {
+		case "?":
+			m.showHelp = true
+			m.helpOffset = 0
+		case " ":
+			m.selected = true
+			return m, tea.Quit
 		case "q":
 			return m, tea.Quit
 		case "up", "k":
@@ -420,9 +462,12 @@ func (m model) View() string {
 	if m.width <= 0 || m.height <= 0 {
 		return ""
 	}
+	if m.showHelp {
+		return m.helpView()
+	}
 	orders := []string{"nome", "tamanho", "data"}
 	header := fit(m.current().path+"  | ordem: "+orders[m.order], m.width)
-	footer := "↑↓/jk mover  ←→/hl entrar/voltar  / filtro  . ocultos  s ordem  q sair"
+	footer := "? atalhos  Espaço selecionar  ↑↓/jk mover  ←→/hl entrar/voltar  q sair"
 	if m.editing {
 		footer = "/" + m.current().filter + "_"
 	} else if m.message != "" {
@@ -581,20 +626,36 @@ func (m model) View() string {
 	}() + fit(footer, m.width)
 }
 
+func (m model) helpView() string {
+	rows := []string{fit("Atalhos", m.width)}
+	if m.height == 1 {
+		return rows[0]
+	}
+	bodyHeight := m.height - 2
+	offset := min(m.helpOffset, max(0, len(helpLines)-max(1, bodyHeight)))
+	for i := 0; i < bodyHeight; i++ {
+		line := ""
+		if offset+i < len(helpLines) {
+			line = helpLines[offset+i]
+		}
+		rows = append(rows, fit(line, m.width))
+	}
+	rows = append(rows, fit("↑↓/jk ou PgUp/PgDown rolar  ?/Esc fechar", m.width))
+	return strings.Join(rows, "\n")
+}
+
 func main() {
 	for _, arg := range os.Args[1:] {
 		if arg == "--help" {
-			fmt.Printf("files-tui %s\nUso: files-tui [--no-root] [--quiet] [--reload] [--git] [--help] [diretório]\n", version)
+			fmt.Printf("files-tui %s\nUso: files-tui [--no-root] [--reload] [--git] [--help] [diretório]\n", version)
 			return
 		}
 	}
 	path := "."
-	noRoot, quiet, reload, showGit, hasPath := false, false, false, false, false
+	noRoot, reload, showGit, hasPath := false, false, false, false
 	for _, arg := range os.Args[1:] {
 		if arg == "--no-root" {
 			noRoot = true
-		} else if arg == "--quiet" {
-			quiet = true
 		} else if arg == "--reload" {
 			reload = true
 		} else if arg == "--git" {
@@ -602,7 +663,7 @@ func main() {
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--quiet] [--reload] [--git] [--help] [diretório]")
+			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--reload] [--git] [--help] [diretório]")
 			os.Exit(2)
 		}
 	}
@@ -625,8 +686,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if !quiet {
-		result := final.(model)
+	if result := final.(model); result.selected {
 		fmt.Println(result.selectedPath())
 	}
 }

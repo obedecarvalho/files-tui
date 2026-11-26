@@ -27,6 +27,38 @@ func TestHelp(t *testing.T) {
 	}
 }
 
+func TestShortcutHelp(t *testing.T) {
+	c, err := loadColumn(t.TempDir(), "", false, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}, width: 80, height: 6}
+	press := func(key tea.KeyMsg) {
+		updated, _ := m.Update(key)
+		m = updated.(model)
+	}
+	question := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")}
+	press(question)
+	if !m.showHelp || !strings.Contains(m.View(), "Atalhos") {
+		t.Fatal("shortcut help did not open")
+	}
+	for i := 0; i < len(helpLines); i++ {
+		press(tea.KeyMsg{Type: tea.KeyDown})
+	}
+	if !strings.Contains(m.View(), "Ctrl+c") {
+		t.Fatal("last shortcut is not reachable")
+	}
+	press(tea.KeyMsg{Type: tea.KeyEsc})
+	if m.showHelp || m.focus != 0 {
+		t.Fatal("escape did not close help without navigating")
+	}
+	press(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
+	press(question)
+	if m.showHelp || m.current().filter != "?" {
+		t.Fatal("question mark should remain available in the filter")
+	}
+}
+
 func TestLoadFilterSortAndLinks(t *testing.T) {
 	d := t.TempDir()
 	if err := os.Mkdir(filepath.Join(d, "Dir"), 0755); err != nil {
@@ -186,6 +218,33 @@ func TestSelectedPath(t *testing.T) {
 	m.refilter("no match")
 	if got := m.selectedPath(); got != d {
 		t.Fatalf("empty selection path: %q", got)
+	}
+}
+
+func TestSpaceSelectsAndQuitDoesNot(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(filepath.Join(d, "file"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := loadColumn(d, "", false, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}}
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	selected := updated.(model)
+	if !selected.selected || cmd == nil || selected.selectedPath() != filepath.Join(d, "file") {
+		t.Fatal("space should select the focused path and quit")
+	}
+	updated, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	if updated.(model).selected || cmd == nil {
+		t.Fatal("q should quit without selecting")
+	}
+	m.editing = true
+	updated, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+	filtered := updated.(model)
+	if filtered.selected || cmd != nil || filtered.current().filter != " " {
+		t.Fatal("space should be usable in a filter")
 	}
 }
 

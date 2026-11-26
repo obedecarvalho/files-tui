@@ -4,11 +4,14 @@ Navegador de arquivos para Linux em Go, com colunas Miller e prévia de arquivos
 
 ## Instalação e execução
 
-Os binários para Linux AMD64 e ARM64 são publicados nas releases do GitHub, com os nomes `files-tui-linux-amd64` e `files-tui-linux-arm64`. Baixe o arquivo correspondente à sua arquitetura, dê permissão de execução e execute-o, por exemplo:
+Baixe o arquivo mais recente:
 
 ```sh
-chmod +x files-tui-linux-amd64
-mv files-tui-linux-amd64 files-tui
+curl -fL -o files-tui https://github.com/obedecarvalho/files-tui/releases/latest/download/files-tui-linux-amd64
+```
+
+```sh
+chmod +x files-tui
 ./files-tui
 ```
 

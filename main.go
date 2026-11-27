@@ -39,7 +39,7 @@ type model struct {
 	columns                                    []column
 	git                                        map[string]gitStatus
 	focus                                      int
-	noRoot                                     bool
+	allowParent                                     bool
 	reload                                     bool
 	showGit                                    bool
 	hidden                                     bool
@@ -221,7 +221,7 @@ func (m *model) back() {
 		m.start = -1
 		return
 	}
-	if !m.noRoot {
+	if !m.allowParent {
 		return
 	}
 	c := m.current()
@@ -671,15 +671,26 @@ func (m model) helpView() string {
 func main() {
 	for _, arg := range os.Args[1:] {
 		if arg == "--help" {
-			fmt.Printf("fastfile %s\nUso: fastfile [--no-root] [--reload] [--git] [--help] [diretório]\n", version)
+			fmt.Printf(`fastfile %s
+Uso: fastfile [--allow-parent] [--reload] [--git] [--help] [diretório]
+
+Argumento:
+  diretório       Diretório inicial (padrão: diretório atual).
+
+Opções:
+  --allow-parent  Permite navegar acima do diretório inicial.
+  --reload        Atualiza a listagem e os estados Git ativos a cada 5 segundos.
+  --git           Ativa os indicadores de estado Git.
+  --help          Exibe esta ajuda e a versão.
+`, version)
 			return
 		}
 	}
 	path := "."
-	noRoot, reload, showGit, hasPath := false, false, false, false
+	allowParent, reload, showGit, hasPath := false, false, false, false
 	for _, arg := range os.Args[1:] {
-		if arg == "--no-root" {
-			noRoot = true
+		if arg == "--allow-parent" {
+			allowParent = true
 		} else if arg == "--reload" {
 			reload = true
 		} else if arg == "--git" {
@@ -687,7 +698,7 @@ func main() {
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Uso: fastfile [--no-root] [--reload] [--git] [--help] [diretório]")
+			fmt.Fprintln(os.Stderr, "Uso: fastfile [--allow-parent] [--reload] [--git] [--help] [diretório]")
 			os.Exit(2)
 		}
 	}
@@ -701,7 +712,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	m := model{columns: []column{c}, start: -1, noRoot: noRoot, reload: reload, showGit: showGit}
+	m := model{columns: []column{c}, start: -1, allowParent: allowParent, reload: reload, showGit: showGit}
 	if m.showGit {
 		m.refreshGit()
 	}

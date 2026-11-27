@@ -22,8 +22,18 @@ func TestHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("help failed: %v\n%s", err, output)
 	}
-	if got := string(output); !strings.Contains(got, "fastfile "+version) || !strings.Contains(got, "Uso: fastfile") || !strings.Contains(got, "--help") {
-		t.Fatalf("unexpected help: %s", got)
+	for _, want := range []string{
+		"fastfile " + version,
+		"Uso: fastfile",
+		"diretório       Diretório inicial (padrão: diretório atual).",
+		"--allow-parent  Permite navegar acima do diretório inicial.",
+		"--reload        Atualiza a listagem e os estados Git ativos a cada 5 segundos.",
+		"--git           Ativa os indicadores de estado Git.",
+		"--help          Exibe esta ajuda e a versão.",
+	} {
+		if !strings.Contains(string(output), want) {
+			t.Errorf("help missing %q: %s", want, output)
+		}
 	}
 }
 
@@ -195,10 +205,10 @@ func TestInitialDirectoryBoundary(t *testing.T) {
 	if m.current().path != d || len(m.columns) != 1 {
 		t.Fatal("default navigation escaped the initial directory")
 	}
-	m.noRoot = true
+	m.allowParent = true
 	m.back()
 	if m.current().path != filepath.Dir(d) || len(m.columns) != 2 {
-		t.Fatal("--no-root should allow navigation to the parent")
+		t.Fatal("--allow-parent should allow navigation to the parent")
 	}
 }
 

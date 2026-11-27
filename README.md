@@ -4,11 +4,14 @@ Navegador de arquivos para Linux em Go, com colunas Miller e prévia de arquivos
 
 ## Instalação e execução
 
-Baixe o arquivo mais recente:
+Para baixar a release mais recente para Linux AMD64:
 
 ```sh
-curl -fL -o fastfile https://github.com/obedecarvalho/fastfile/releases/latest/download/fastfile-linux-amd64
+VERSION=$(curl -fsSL https://api.github.com/repos/obedecarvalho/fastfile/releases/latest | grep '"tag_name":' | cut -d '"' -f 4)
+curl -fL -o fastfile "https://github.com/obedecarvalho/fastfile/releases/download/${VERSION}/fastfile-linux-${VERSION}-amd64"
 ```
+
+Para Linux ARM64, substitua `amd64` por `arm64` no comando de download.
 
 ```sh
 chmod +x fastfile
@@ -23,7 +26,7 @@ Use `./fastfile --help` para exibir a versão e as opções disponíveis.
 
 Sem argumento, abre o diretório atual. A navegação não altera arquivos nem executa arquivos selecionados; o atalho `e` abre um editor que pode alterá-los.
 
-Por padrão, não é possível voltar acima do diretório inicial. Use `./fastfile --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
+Por padrão, não é possível voltar acima do diretório inicial. Use `./fastfile --allow-parent /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
 
 Pressione `Espaço` para sair e escrever o caminho absoluto do item em foco na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Ao sair com `q` ou `Ctrl+C`, nenhum caminho é escrito.
 
@@ -65,14 +68,24 @@ Em repositórios Git, `[A]` indica arquivo novo no staging, `[S]` indica outras 
 
 O marcador `[I]` identifica arquivos e diretórios ignorados pelo Git, diferenciando-os de arquivos novos (`[?]`) e modificados (`[M]`). Itens dentro de um diretório ignorado também recebem `[I]`; esse estado não é agregado às pastas ancestrais.
 
-### Exemplos
+### Exemplos de configuração de programas externos
 
-```
+Configure um visualizador para o atalho `v`, por exemplo:
+
+```sh
 export PAGER='less'
-#ou
+```
+
+Ou, para usar o `bat`:
+
+```sh
 export PAGER='bat --paging=always'
 ```
 
-```
+Configure um editor para o atalho `e`, por exemplo:
+
+```sh
 export EDITOR='vim'
 ```
+
+Depois, execute `./fastfile` no mesmo terminal.

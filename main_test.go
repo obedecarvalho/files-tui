@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,6 +35,24 @@ func TestHelp(t *testing.T) {
 		if !strings.Contains(string(output), want) {
 			t.Errorf("help missing %q: %s", want, output)
 		}
+	}
+}
+
+func TestInvalidArgumentShowsHelp(t *testing.T) {
+	if os.Getenv("FASTFILE_TEST_INVALID_ARGUMENT") == "1" {
+		os.Args = []string{"fastfile", "--invalid"}
+		main()
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=^TestInvalidArgumentShowsHelp$")
+	cmd.Env = append(os.Environ(), "FASTFILE_TEST_INVALID_ARGUMENT=1")
+	output, err := cmd.Output()
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok || exitErr.ExitCode() != 2 {
+		t.Fatalf("expected exit code 2, got %v", err)
+	}
+	if len(output) != 0 || string(exitErr.Stderr) != fmt.Sprintf(usage, version) {
+		t.Fatalf("unexpected output: stdout %q, stderr %q", output, exitErr.Stderr)
 	}
 }
 
@@ -185,6 +204,32 @@ func TestPreviewMetadataAndBinary(t *testing.T) {
 				t.Errorf("%s: missing %q in %s", tc.name, want, got)
 			}
 		}
+	}
+}
+
+func TestPreviewInvalidUTF8(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		data []byte
+		want string
+	}{
+		{"invalid", []byte("hello \xffworld"), "hello �world"},
+		{"truncated", append([]byte(strings.Repeat("a", previewLimit-1)), []byte("é")...), strings.Repeat("a", previewLimit-1) + "�\n(preview truncated at 256 KiB)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d := t.TempDir()
+			if err := os.WriteFile(filepath.Join(d, "file"), tc.data, 0644); err != nil {
+				t.Fatal(err)
+			}
+			c, err := loadColumn(d, "", false, 0, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := strings.Join(preview(d, c.chosen()), "\n")
+			if !strings.Contains(got, tc.want) {
+				t.Fatal("preview did not contain the expected replacement text")
+			}
+		})
 	}
 }
 

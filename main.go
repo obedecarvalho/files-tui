@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -511,7 +510,7 @@ func preview(path string, e *entry) []string {
 	if truncated {
 		data = data[:previewLimit]
 	}
-	if bytes.IndexByte(data, 0) >= 0 || !utf8.Valid(data) {
+	if bytes.IndexByte(data, 0) >= 0 {
 		mime := http.DetectContentType(data)
 		return append(lines, "", "Detected content: "+mime, "(binary file or unsupported text)")
 	}
@@ -749,10 +748,7 @@ func (m model) helpView() string {
 	return strings.Join(rows, "\n")
 }
 
-func main() {
-	for _, arg := range os.Args[1:] {
-		if arg == "--help" {
-			fmt.Printf(`fastfile %s
+const usage = `fastfile %s
 Usage: fastfile [--allow-parent] [--reload] [--git] [--help] [directory]
 
 Argument:
@@ -763,7 +759,12 @@ Options:
   --reload        Refresh the listing and active Git statuses every 5 seconds.
   --git           Enable Git status indicators.
   --help          Show this help and the version.
-`, version)
+`
+
+func main() {
+	for _, arg := range os.Args[1:] {
+		if arg == "--help" {
+			fmt.Printf(usage, version)
 			return
 		}
 	}
@@ -779,7 +780,7 @@ Options:
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Usage: fastfile [--allow-parent] [--reload] [--git] [--help] [directory]")
+			fmt.Fprintf(os.Stderr, usage, version)
 			os.Exit(2)
 		}
 	}

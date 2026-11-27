@@ -18,21 +18,22 @@ chmod +x fastfile
 ./fastfile
 ```
 
-Para compilar o projeto ou contribuir com o desenvolvimento, consulte [DEV.md](DEV.md).
+Para abrir outro diretório, execute `./fastfile /home`. Use `./fastfile --help` para ver as opções disponíveis e `?` durante a navegação para consultar os atalhos.
 
-Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./fastfile /home`.
+Para executar `fastfile` de qualquer diretório, instale-o em `$HOME/.local/bin`:
 
-Use `./fastfile --help` para exibir a versão e as opções disponíveis.
+```sh
+mkdir -p "$HOME/.local/bin"
+mv fastfile "$HOME/.local/bin/fastfile"
+```
 
-Sem argumento, abre o diretório atual. A navegação não altera arquivos nem executa arquivos selecionados; o atalho `e` abre um editor que pode alterá-los.
+Se `$HOME/.local/bin` ainda não estiver no `PATH`, adicione a linha abaixo ao arquivo de configuração do seu shell (por exemplo, `~/.bashrc` ou `~/.zshrc`) e abra um novo terminal:
 
-Por padrão, não é possível voltar acima do diretório inicial. Use `./fastfile --allow-parent /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
 
-Pressione `Espaço` para sair e escrever o caminho absoluto do item em foco na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Ao sair com `q` ou `Ctrl+C`, nenhum caminho é escrito.
-
-Use `--reload` para atualizar automaticamente a listagem e, quando ativados, os estados Git a cada 5 segundos, por exemplo `./fastfile --reload /home`.
-
-Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao iniciar ou pressione `Ctrl+g` para alterná-los durante a navegação.
+Então execute `fastfile` ou `fastfile /home`.
 
 ## Controles
 
@@ -58,34 +59,7 @@ Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao
 
 Na lista de atalhos, use ↑/↓, k/j ou Page Up/Page Down para rolar.
 
-Os programas externos usam o terminal e, ao terminar, retornam à interface. Os atalhos `v` e `e` exigem, respectivamente, que `$PAGER` e `$EDITOR` estejam definidos; caso contrário, uma mensagem é exibida. As variáveis aceitam argumentos e aspas, sem expansão de shell. Visualização e edição exigem um arquivo comum. A listagem e os indicadores Git ativos são atualizados no retorno.
+## Documentação
 
-O atalho `d` funciona mesmo sem `--git` e mostra separadamente alterações staged (índice em relação ao HEAD) e não staged (arquivos em relação ao índice), também para diretórios. Arquivos não rastreados são indicados, mas não aparecem no diff. Fora de um repositório, é exibida uma mensagem. A comparação entre dois arquivos arbitrários não está disponível.
-
-A prévia mostra metadados e até 256 KiB de texto UTF-8. Links simbólicos são marcados com `@`; diretórios, com `/`. Arquivos binários ou texto em outra codificação mostram apenas metadados.
-
-Em repositórios Git, `[A]` indica arquivo novo no staging, `[S]` indica outras alterações staged, `[M]` indica alterações não staged e `[?]` indica arquivos não rastreados. Os marcadores podem ser combinados, como `[AM]`; diretórios agregam os estados dos itens contidos neles. As cores também indicam o estado, mas o item em foco mantém o destaque de seleção. Pressione `r` para atualizar os estados. Fora de um repositório ou sem Git instalado, a navegação funciona sem indicadores Git. Arquivos removidos não aparecem na listagem, mas suas pastas existentes recebem o indicador correspondente.
-
-O marcador `[I]` identifica arquivos e diretórios ignorados pelo Git, diferenciando-os de arquivos novos (`[?]`) e modificados (`[M]`). Itens dentro de um diretório ignorado também recebem `[I]`; esse estado não é agregado às pastas ancestrais.
-
-### Exemplos de configuração de programas externos
-
-Configure um visualizador para o atalho `v`, por exemplo:
-
-```sh
-export PAGER='less'
-```
-
-Ou, para usar o `bat`:
-
-```sh
-export PAGER='bat --paging=always'
-```
-
-Configure um editor para o atalho `e`, por exemplo:
-
-```sh
-export EDITOR='vim'
-```
-
-Depois, execute `./fastfile` no mesmo terminal.
+- [Uso, controles e funcionalidades](DOCS.md)
+- [Compilação e desenvolvimento](DEV.md)

@@ -19,6 +19,41 @@ func TestCommandWords(t *testing.T) {
 	}
 }
 
+func TestConfiguredCommand(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("EDITOR", "vim")
+	t.Setenv("PAGER", "less")
+	check := func(action string, want []string) {
+		t.Helper()
+		got, err := configuredCommand(action)
+		if err != nil || !reflect.DeepEqual(got, want) {
+			t.Fatalf("%s: got %q, %v; want %q", action, got, err, want)
+		}
+	}
+	check("e", []string{"vim"})
+	check("v", []string{"less"})
+	if _, err := configuredCommand("d"); err == nil || !strings.Contains(err.Error(), "git_diff não está definido") {
+		t.Fatalf("expected missing diff configuration: %v", err)
+	}
+	if err := os.Mkdir(filepath.Join(home, ".config"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(home, ".config", "fastfile.conf")
+	if err := os.WriteFile(path, []byte("# ferramentas\neditor = code --wait\npager = bat --paging=always\ngit_diff = meld\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	check("e", []string{"code", "--wait"})
+	check("v", []string{"bat", "--paging=always"})
+	check("d", []string{"meld"})
+	if err := os.WriteFile(path, []byte("editor = \"incompleto\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := configuredCommand("e"); err == nil {
+		t.Fatal("expected invalid command error")
+	}
+}
+
 func TestGitDiffSections(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git unavailable")
@@ -47,23 +82,23 @@ func TestGitDiffSections(t *testing.T) {
 	write("staged\n")
 	run("add", "--", filepath.Base(path))
 	write("unstaged\n")
-	out, err := gitDiff(dir, path)
+	log := filepath.Join(t.TempDir(), "comparisons")
+	t.Setenv("DIFF_TEST_LOG", log)
+	run("config", "difftool.test.cmd", `printf '%s|' "$(cat "$LOCAL")" "$(cat "$REMOTE")" >> "$DIFF_TEST_LOG"`)
+	tty, err := os.CreateTemp(t.TempDir(), "tty")
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := string(out)
-	if !strings.Contains(text, "+staged") || !strings.Contains(text, "+unstaged") {
-		t.Fatalf("missing sections: %s", text)
-	}
-	untracked := filepath.Join(dir, "new")
-	if err := os.WriteFile(untracked, []byte("new"), 0600); err != nil {
+	defer tty.Close()
+	tool := externalTool{dir: dir, path: path}
+	if err := tool.diff(tty, []string{"test"}); err != nil {
 		t.Fatal(err)
 	}
-	out, err = gitDiff(dir, untracked)
-	if err != nil || !strings.Contains(string(out), "não rastreados") {
-		t.Fatalf("untracked: %s, %v", out, err)
+	output, err := os.ReadFile(log)
+	if err != nil || string(output) != "original|staged|staged|unstaged|" {
+		t.Fatalf("comparisons: %q, %v", output, err)
 	}
-	if _, err := gitDiff(t.TempDir(), path); err == nil {
+	if err := (&externalTool{dir: t.TempDir(), path: path}).diff(tty, []string{"test"}); err == nil {
 		t.Fatal("expected non-repository error")
 	}
 }

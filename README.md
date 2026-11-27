@@ -59,6 +59,8 @@ Então execute `fastfile` ou `fastfile /home`.
 
 Na lista de atalhos, use ↑/↓, k/j ou Page Up/Page Down para rolar.
 
+Configure editor, visualizador e diff Git em `$HOME/.config/fastfile.conf`; veja os [detalhes de configuração](DOCS.md#configuração-de-programas-externos).
+
 ## Documentação
 
 - [Uso, controles e funcionalidades](DOCS.md)

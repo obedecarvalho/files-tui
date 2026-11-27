@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -30,25 +29,17 @@ func (*externalTool) SetStdout(io.Writer) {}
 func (*externalTool) SetStderr(io.Writer) {}
 
 func (t *externalTool) Run() error {
+	args, err := configuredCommand(t.action)
+	if err != nil {
+		return err
+	}
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {
 		return fmt.Errorf("terminal indisponível: %w", err)
 	}
 	defer tty.Close()
 	if t.action == "d" {
-		return t.diff(tty)
-	}
-	variable := "PAGER"
-	if t.action == "e" {
-		variable = "EDITOR"
-	}
-	value := os.Getenv(variable)
-	if strings.TrimSpace(value) == "" {
-		return fmt.Errorf("%s não está definido", variable)
-	}
-	args, err := commandWords(value)
-	if err != nil || len(args) == 0 || args[0] == "" {
-		return fmt.Errorf("%s inválido", variable)
+		return t.diff(tty, args)
 	}
 	args = append(args, "--", t.path)
 	cmd := exec.Command(args[0], args[1:]...)
@@ -63,13 +54,60 @@ func (t *externalTool) Run() error {
 	return nil
 }
 
-func firstAvailable(names ...string) []string {
-	for _, name := range names {
-		if _, err := exec.LookPath(name); err == nil {
-			return []string{name}
+func configuredCommand(action string) ([]string, error) {
+	key, variable := "pager", "PAGER"
+	if action == "e" {
+		key, variable = "editor", "EDITOR"
+	} else if action == "d" {
+		key, variable = "git_diff", ""
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("diretório pessoal indisponível: %w", err)
+	}
+	path := filepath.Join(home, ".config", "fastfile.conf")
+	file, err := os.Open(path)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("configuração: %w", err)
+	}
+	value := ""
+	if err == nil {
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for line := 1; scanner.Scan(); line++ {
+			text := strings.TrimSpace(scanner.Text())
+			if text == "" || strings.HasPrefix(text, "#") {
+				continue
+			}
+			name, command, ok := strings.Cut(text, "=")
+			if !ok {
+				return nil, fmt.Errorf("configuração inválida na linha %d", line)
+			}
+			if strings.TrimSpace(name) == key {
+				value = strings.TrimSpace(command)
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, fmt.Errorf("configuração: %w", err)
 		}
 	}
-	return nil
+	if value == "" && variable != "" {
+		value = os.Getenv(variable)
+	}
+	if strings.TrimSpace(value) == "" {
+		if variable != "" {
+			return nil, fmt.Errorf("%s não está definido", variable)
+		}
+		return nil, fmt.Errorf("git_diff não está definido em %s", path)
+	}
+	args, err := commandWords(value)
+	if err != nil || len(args) == 0 || args[0] == "" {
+		return nil, fmt.Errorf("comando %s inválido", key)
+	}
+	if action == "d" && len(args) != 1 {
+		return nil, fmt.Errorf("git_diff deve conter apenas o nome da ferramenta Git")
+	}
+	return args, nil
 }
 
 // commandWords accepts quotes and escapes, but deliberately does not invoke a shell.
@@ -113,87 +151,27 @@ func commandWords(s string) ([]string, error) {
 	return words, nil
 }
 
-func (t *externalTool) diff(tty *os.File) error {
-	output, err := gitDiff(t.dir, t.path)
+func (t *externalTool) diff(tty *os.File, tool []string) error {
+	root, err := exec.Command("git", "-C", t.dir, "rev-parse", "--show-toplevel").Output()
 	if err != nil {
-		return err
-	}
-	file, err := os.CreateTemp("", "fastfile-diff-*.txt")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(file.Name())
-	if _, err = file.Write(output); err != nil {
-		file.Close()
-		return err
-	}
-	if err = file.Close(); err != nil {
-		return err
-	}
-	viewer := firstAvailable("less", "bat", "cat")
-	if len(viewer) == 0 {
-		return fmt.Errorf("nenhum visualizador disponível")
-	}
-	if viewer[0] == "bat" {
-		viewer = append(viewer, "--paging=always")
-	}
-	viewer = append(viewer, "--", file.Name())
-	cmd := exec.Command(viewer[0], viewer[1:]...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = tty, tty, tty
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %w", viewer[0], err)
-	}
-	if viewer[0] == "cat" {
-		fmt.Fprint(tty, "\nPressione Enter para voltar...")
-		_, _ = bufio.NewReader(tty).ReadString('\n')
-	}
-	return nil
-}
-
-func gitDiff(dir, path string) ([]byte, error) {
-	root, err := exec.Command("git", "-C", dir, "rev-parse", "--show-toplevel").Output()
-	if err != nil {
-		return nil, fmt.Errorf("Git indisponível ou item fora de um repositório")
+		return fmt.Errorf("Git indisponível ou item fora de um repositório")
 	}
 	repo := strings.TrimSuffix(string(root), "\n")
-	rel, err := filepath.Rel(repo, path)
+	rel, err := filepath.Rel(repo, t.path)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var result bytes.Buffer
-	for _, section := range []struct {
-		title string
-		args  []string
-	}{
-		{"Staged (índice x HEAD)", []string{"--cached"}},
-		{"Não staged (arquivos x índice)", nil},
-	} {
-		args := []string{"-C", repo, "--literal-pathspecs", "diff", "--no-ext-diff", "--no-textconv", "--no-color"}
-		args = append(args, section.args...)
+	for _, cached := range []bool{true, false} {
+		args := []string{"-C", repo, "--literal-pathspecs", "difftool", "--no-prompt", "--trust-exit-code", "--tool=" + tool[0]}
+		if cached {
+			args = append(args, "--cached")
+		}
 		args = append(args, "--", rel)
 		cmd := exec.Command("git", args...)
-		out, err := cmd.Output()
-		if err != nil {
-			return nil, fmt.Errorf("erro ao obter diff Git: %w", err)
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = tty, tty, tty
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("git difftool: %w", err)
 		}
-		fmt.Fprintf(&result, "=== %s ===\n", section.title)
-		if len(out) == 0 {
-			result.WriteString("(sem alterações)\n")
-		} else {
-			result.Write(out)
-			if out[len(out)-1] != '\n' {
-				result.WriteByte('\n')
-			}
-		}
-		result.WriteByte('\n')
 	}
-	cmd := exec.Command("git", "-C", repo, "--literal-pathspecs", "ls-files", "--others", "--exclude-standard", "-z", "--", rel)
-	untracked, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("erro ao consultar arquivos não rastreados: %w", err)
-	}
-	if len(untracked) > 0 {
-		result.WriteString("Há arquivos não rastreados; eles não aparecem no diff Git.\n")
-	}
-	return result.Bytes(), nil
+	return nil
 }

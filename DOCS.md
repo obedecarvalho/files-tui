@@ -18,9 +18,9 @@ Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao
 
 Consulte os [atalhos no README](README.md#controles).
 
-Os programas externos usam o terminal e, ao terminar, retornam à interface. Os atalhos `v` e `e` exigem, respectivamente, que `$PAGER` e `$EDITOR` estejam definidos; caso contrário, uma mensagem é exibida. As variáveis aceitam argumentos e aspas, sem expansão de shell. Visualização e edição exigem um arquivo comum. A listagem e os indicadores Git ativos são atualizados no retorno.
+Os programas externos usam o terminal e, ao terminar, retornam à interface. Os atalhos `v` e `e` usam os comandos configurados em `fastfile.conf` ou, na ausência deles, `$PAGER` e `$EDITOR`, respectivamente. Se não estiverem definidos, uma mensagem é exibida. Visualização e edição exigem um arquivo comum. A listagem e os indicadores Git ativos são atualizados no retorno.
 
-O atalho `d` funciona mesmo sem `--git` e mostra separadamente alterações staged (índice em relação ao HEAD) e não staged (arquivos em relação ao índice), também para diretórios. Arquivos não rastreados são indicados, mas não aparecem no diff. Fora de um repositório, é exibida uma mensagem. A comparação entre dois arquivos arbitrários não está disponível.
+O atalho `d` funciona mesmo sem `--git` e abre com `git difftool` as alterações staged (índice em relação ao HEAD) e, em seguida, as não staged (arquivos em relação ao índice), também para diretórios. O Git abre a ferramenta para cada arquivo alterado; arquivos não rastreados não são comparados. Sem alterações rastreadas, nenhuma comparação é aberta. Fora de um repositório, é exibida uma mensagem. A comparação entre dois arquivos arbitrários não está disponível.
 
 A prévia mostra metadados e até 256 KiB de texto UTF-8. Links simbólicos são marcados com `@`; diretórios, com `/`. Arquivos binários ou texto em outra codificação mostram apenas metadados.
 
@@ -28,7 +28,22 @@ Em repositórios Git, `[A]` indica arquivo novo no staging, `[S]` indica outras 
 
 O marcador `[I]` identifica arquivos e diretórios ignorados pelo Git, diferenciando-os de arquivos novos (`[?]`) e modificados (`[M]`). Itens dentro de um diretório ignorado também recebem `[I]`; esse estado não é agregado às pastas ancestrais.
 
-### Exemplos de configuração de programas externos
+### Configuração de programas externos
+
+Crie `$HOME/.config/fastfile.conf` para definir os comandos usados pelos atalhos `e`, `v` e `d`:
+
+```ini
+# Cada comando pode incluir argumentos
+editor = vim
+pager = bat --paging=always
+git_diff = meld
+```
+
+Linhas vazias e linhas iniciadas por `#` são ignoradas. Os comandos de editor e visualizador aceitam argumentos, aspas e escapes, sem expansão ou execução pelo shell. Configurações vazias ou ausentes para `editor` e `pager` usam `$EDITOR` e `$PAGER`; para `git_diff`, uma mensagem é exibida se não estiver configurado. O arquivo é lido novamente ao acionar cada atalho.
+
+Em `git_diff`, informe apenas o nome de uma ferramenta reconhecida ou configurada no Git, como `meld` ou `vimdiff` (consulte `git difftool --tool-help`). Para ferramentas personalizadas, configure `difftool.<nome>.cmd` no Git. Os comandos de editor e visualizador recebem o caminho do arquivo após `--`.
+
+### Exemplos com variáveis de ambiente
 
 Configure um visualizador para o atalho `v`, por exemplo:
 

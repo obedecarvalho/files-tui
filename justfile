@@ -2,30 +2,30 @@
 default:
     @just --list
 
-# Compila o aplicativo em bin/fastfile.
+# Build the application at bin/fastfile.
 build:
     go build -o bin/fastfile .
 
-# Executa os testes.
+# Run the tests.
 test:
     go test ./...
 
-# Executa a análise estática do Go.
+# Run Go static analysis.
 vet:
     go vet ./...
 
-# Formata os arquivos Go.
+# Format the Go files.
 fmt:
     gofmt -w *.go
 
-# Verifica a formatação sem alterar arquivos.
+# Check formatting without changing files.
 fmt-check:
-    @files="$(gofmt -l *.go)"; if [ -n "$files" ]; then printf 'Arquivos não formatados:\n%s\n' "$files"; exit 1; fi
+    @files="$(gofmt -l *.go)"; if [ -n "$files" ]; then printf 'Unformatted files:\n%s\n' "$files"; exit 1; fi
 
-# Executa as verificações do projeto.
+# Run project checks.
 check: fmt-check vet test
 
-# Executa o aplicativo, aceitando opções e um diretório.
+# Run the application with optional flags and a directory.
 run *args:
     go run . "$@"
 set positional-arguments

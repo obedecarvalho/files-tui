@@ -35,7 +35,7 @@ func (t *externalTool) Run() error {
 	}
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {
-		return fmt.Errorf("terminal indisponível: %w", err)
+		return fmt.Errorf("terminal unavailable: %w", err)
 	}
 	defer tty.Close()
 	if t.action == "d" {
@@ -48,7 +48,7 @@ func (t *externalTool) Run() error {
 		return fmt.Errorf("%s: %w", args[0], err)
 	}
 	if t.action == "v" && filepath.Base(args[0]) == "cat" {
-		fmt.Fprint(tty, "\nPressione Enter para voltar...")
+		fmt.Fprint(tty, "\nPress Enter to return...")
 		_, _ = bufio.NewReader(tty).ReadString('\n')
 	}
 	return nil
@@ -63,12 +63,12 @@ func configuredCommand(action string) ([]string, error) {
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return nil, fmt.Errorf("diretório pessoal indisponível: %w", err)
+		return nil, fmt.Errorf("home directory unavailable: %w", err)
 	}
 	path := filepath.Join(home, ".config", "fastfile.conf")
 	file, err := os.Open(path)
 	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("configuração: %w", err)
+		return nil, fmt.Errorf("configuration: %w", err)
 	}
 	value := ""
 	if err == nil {
@@ -81,14 +81,14 @@ func configuredCommand(action string) ([]string, error) {
 			}
 			name, command, ok := strings.Cut(text, "=")
 			if !ok {
-				return nil, fmt.Errorf("configuração inválida na linha %d", line)
+				return nil, fmt.Errorf("invalid configuration on line %d", line)
 			}
 			if strings.TrimSpace(name) == key {
 				value = strings.TrimSpace(command)
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			return nil, fmt.Errorf("configuração: %w", err)
+			return nil, fmt.Errorf("configuration: %w", err)
 		}
 	}
 	if value == "" && variable != "" {
@@ -96,16 +96,16 @@ func configuredCommand(action string) ([]string, error) {
 	}
 	if strings.TrimSpace(value) == "" {
 		if variable != "" {
-			return nil, fmt.Errorf("%s não está definido", variable)
+			return nil, fmt.Errorf("%s is not set", variable)
 		}
-		return nil, fmt.Errorf("git_diff não está definido em %s", path)
+		return nil, fmt.Errorf("git_diff is not set in %s", path)
 	}
 	args, err := commandWords(value)
 	if err != nil || len(args) == 0 || args[0] == "" {
-		return nil, fmt.Errorf("comando %s inválido", key)
+		return nil, fmt.Errorf("invalid %s command", key)
 	}
 	if action == "d" && len(args) != 1 {
-		return nil, fmt.Errorf("git_diff deve conter apenas o nome da ferramenta Git")
+		return nil, fmt.Errorf("git_diff must contain only the Git tool name")
 	}
 	return args, nil
 }
@@ -143,7 +143,7 @@ func commandWords(s string) ([]string, error) {
 		}
 	}
 	if quote != 0 || escape {
-		return nil, fmt.Errorf("aspas ou escape incompletos")
+		return nil, fmt.Errorf("incomplete quote or escape")
 	}
 	if started {
 		words = append(words, b.String())
@@ -154,7 +154,7 @@ func commandWords(s string) ([]string, error) {
 func (t *externalTool) diff(tty *os.File, tool []string) error {
 	root, err := exec.Command("git", "-C", t.dir, "rev-parse", "--show-toplevel").Output()
 	if err != nil {
-		return fmt.Errorf("Git indisponível ou item fora de um repositório")
+		return fmt.Errorf("Git unavailable or item outside a repository")
 	}
 	repo := strings.TrimSuffix(string(root), "\n")
 	rel, err := filepath.Rel(repo, t.path)

@@ -1,66 +1,66 @@
-# Documentação do Fastfile
+# Fastfile documentation
 
-## Uso e opções
+## Usage and options
 
-Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./fastfile /home`.
+To open another directory, pass its path as an argument, for example `./fastfile /home`.
 
-Use `./fastfile --help` para exibir a versão e as opções disponíveis.
+Use `./fastfile --help` to show the version and available options.
 
-Sem argumento, abre o diretório atual. A navegação não altera arquivos nem executa arquivos selecionados; o atalho `e` abre um editor que pode alterá-los.
+With no argument, Fastfile opens the current directory. Browsing does not change files or execute selected files; the `e` shortcut opens an editor that can change them.
 
-Por padrão, não é possível voltar acima do diretório inicial. Use `./fastfile --allow-parent /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
+By default, you cannot navigate above the starting directory. Use `./fastfile --allow-parent /home` to allow navigation to parent directories. This is a navigation restriction, not a security barrier against symbolic links.
 
-Pressione `Espaço` para sair e escrever o caminho absoluto do item em foco na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Ao sair com `q` ou `Ctrl+C`, nenhum caminho é escrito.
+Press `Space` to exit and write the absolute path of the focused item to standard output. If no item is selected, the current directory path is written instead. Exiting with `q` or `Ctrl+C` writes no path.
 
-Use `--reload` para atualizar automaticamente a listagem e, quando ativados, os estados Git a cada 5 segundos, por exemplo `./fastfile --reload /home`.
+Use `--reload` to automatically refresh the listing and, when enabled, Git statuses every 5 seconds, for example `./fastfile --reload /home`.
 
-Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao iniciar ou pressione `Ctrl+g` para alterná-los durante a navegação.
+Git indicators are disabled by default. Use `--git` to enable them at startup or press `Ctrl+g` to toggle them while browsing.
 
-Consulte os [atalhos no README](README.md#controles).
+See the [shortcuts in the README](README.md#controls).
 
-Os programas externos usam o terminal e, ao terminar, retornam à interface. Os atalhos `v` e `e` usam os comandos configurados em `fastfile.conf` ou, na ausência deles, `$PAGER` e `$EDITOR`, respectivamente. Se não estiverem definidos, uma mensagem é exibida. Visualização e edição exigem um arquivo comum. A listagem e os indicadores Git ativos são atualizados no retorno.
+External programs use the terminal and return to the interface when they finish. The `v` and `e` shortcuts use commands configured in `fastfile.conf` or, if absent, `$PAGER` and `$EDITOR`, respectively. If they are not set, a message is displayed. Viewing and editing require a regular file. The listing and any active Git indicators are refreshed on return.
 
-O atalho `d` funciona mesmo sem `--git` e abre com `git difftool` as alterações staged (índice em relação ao HEAD) e, em seguida, as não staged (arquivos em relação ao índice), também para diretórios. O Git abre a ferramenta para cada arquivo alterado; arquivos não rastreados não são comparados. Sem alterações rastreadas, nenhuma comparação é aberta. Fora de um repositório, é exibida uma mensagem. A comparação entre dois arquivos arbitrários não está disponível.
+The `d` shortcut works even without `--git` and uses `git difftool` to open staged changes (index against HEAD) followed by unstaged changes (files against the index), including for directories. Git opens the tool for each changed file; untracked files are not compared. If there are no tracked changes, no comparison is opened. Outside a repository, a message is displayed. Comparing two arbitrary files is not available.
 
-A prévia começa habilitada e pode ser mostrada ou ocultada com `p`, quando houver espaço na tela. Use `P` para ampliar a prévia e pressione `P` novamente ou `Esc` para voltar ao layout normal. Ela mostra tipo, tamanho legível, data de modificação, permissões e até 256 KiB de texto UTF-8. Links simbólicos são marcados com `@` e exibem seu destino; diretórios são marcados com `/`. Para arquivos binários ou texto em outra codificação, exibe também o tipo de conteúdo detectado, quando possível.
+The preview is enabled by default and can be shown or hidden with `p` when there is enough screen space. Use `P` to expand the preview and press `P` again or `Esc` to return to the normal layout. It shows type, human-readable size, modification time, permissions and up to 256 KiB of UTF-8 text. Symbolic links are marked with `@` and show their target; directories are marked with `/`. For binary files or text in another encoding, it also shows the detected content type when possible.
 
-Em repositórios Git, `[A]` indica arquivo novo no staging, `[S]` indica outras alterações staged, `[M]` indica alterações não staged e `[?]` indica arquivos não rastreados. Os marcadores podem ser combinados, como `[AM]`; diretórios agregam os estados dos itens contidos neles. As cores também indicam o estado, mas o item em foco mantém o destaque de seleção. Pressione `r` para atualizar os estados. Fora de um repositório ou sem Git instalado, a navegação funciona sem indicadores Git. Arquivos removidos não aparecem na listagem, mas suas pastas existentes recebem o indicador correspondente.
+In Git repositories, `[A]` indicates a newly staged file, `[S]` indicates other staged changes, `[M]` indicates unstaged changes and `[?]` indicates untracked files. Markers can be combined, such as `[AM]`; directories aggregate the statuses of items they contain. Colors also indicate status, but the focused item retains its selection highlight. Press `r` to refresh statuses. Outside a repository or without Git installed, browsing works without Git indicators. Deleted files do not appear in the listing, but their existing directories receive the corresponding indicator.
 
-O marcador `[I]` identifica arquivos e diretórios ignorados pelo Git, diferenciando-os de arquivos novos (`[?]`) e modificados (`[M]`). Itens dentro de um diretório ignorado também recebem `[I]`; esse estado não é agregado às pastas ancestrais.
+The `[I]` marker identifies files and directories ignored by Git, distinguishing them from new (`[?]`) and modified (`[M]`) files. Items inside an ignored directory also receive `[I]`; this status is not aggregated to ancestor directories.
 
-### Configuração de programas externos
+### External program configuration
 
-Crie `$HOME/.config/fastfile.conf` para definir os comandos usados pelos atalhos `e`, `v` e `d`:
+Create `$HOME/.config/fastfile.conf` to define the commands used by the `e`, `v` and `d` shortcuts:
 
 ```ini
-# Cada comando pode incluir argumentos
+# Each command may include arguments
 editor = vim
 pager = bat --paging=always
 git_diff = meld
 ```
 
-Linhas vazias e linhas iniciadas por `#` são ignoradas. Os comandos de editor e visualizador aceitam argumentos, aspas e escapes, sem expansão ou execução pelo shell. Configurações vazias ou ausentes para `editor` e `pager` usam `$EDITOR` e `$PAGER`; para `git_diff`, uma mensagem é exibida se não estiver configurado. O arquivo é lido novamente ao acionar cada atalho.
+Empty lines and lines beginning with `#` are ignored. Editor and pager commands accept arguments, quotes and escapes, without shell expansion or execution. Empty or missing `editor` and `pager` settings fall back to `$EDITOR` and `$PAGER`; for `git_diff`, a message is displayed if it is not configured. The file is read again each time a shortcut is invoked.
 
-Em `git_diff`, informe apenas o nome de uma ferramenta reconhecida ou configurada no Git, como `meld` ou `vimdiff` (consulte `git difftool --tool-help`). Para ferramentas personalizadas, configure `difftool.<nome>.cmd` no Git. Os comandos de editor e visualizador recebem o caminho do arquivo após `--`.
+For `git_diff`, specify only the name of a tool recognized or configured by Git, such as `meld` or `vimdiff` (see `git difftool --tool-help`). For custom tools, configure `difftool.<name>.cmd` in Git. Editor and pager commands receive the file path after `--`.
 
-### Exemplos com variáveis de ambiente
+### Environment variable examples
 
-Configure um visualizador para o atalho `v`, por exemplo:
+Configure a pager for the `v` shortcut, for example:
 
 ```sh
 export PAGER='less'
 ```
 
-Ou, para usar o `bat`:
+Or, to use `bat`:
 
 ```sh
 export PAGER='bat --paging=always'
 ```
 
-Configure um editor para o atalho `e`, por exemplo:
+Configure an editor for the `e` shortcut, for example:
 
 ```sh
 export EDITOR='vim'
 ```
 
-Depois, execute `./fastfile` no mesmo terminal.
+Then run `./fastfile` in the same terminal.

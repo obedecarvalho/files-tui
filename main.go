@@ -55,24 +55,24 @@ type model struct {
 }
 
 var helpLines = []string{
-	"↑/↓ ou k/j    Mover seleção",
-	"→, l, Enter   Entrar no diretório",
-	"←, h, Backspace   Voltar ao diretório pai",
-	"g / G         Primeiro / último item",
-	"[ / ]         Deslocar colunas",
-	"Page Up / Page Down   Rolar prévia",
-	"p             Mostrar / ocultar prévia",
-	"P / Esc       Ampliar / restaurar prévia",
-	".             Alternar arquivos ocultos",
-	"/             Filtrar nomes",
-	"Enter / Esc   Confirmar / limpar filtro",
-	"s             Alternar ordenação",
-	"r             Atualizar listagem e estados Git",
-	"v / e / d     Visualizar / editar / diferenças Git",
-	"Ctrl+g        Alternar indicadores Git",
-	"?             Abrir / fechar atalhos",
-	"Espaço        Selecionar e sair",
-	"q / Ctrl+c    Sair",
+	"↑/↓ or k/j    Move selection",
+	"→, l, Enter   Enter directory",
+	"←, h, Backspace   Go to parent directory",
+	"g / G         First / last item",
+	"[ / ]         Shift columns",
+	"Page Up / Page Down   Scroll preview",
+	"p             Show / hide preview",
+	"P / Esc       Expand / restore preview",
+	".             Toggle hidden files",
+	"/             Filter names",
+	"Enter / Esc   Confirm / clear filter",
+	"s             Change sort order",
+	"r             Refresh listing and Git status",
+	"v / e / d     View / edit / Git diff",
+	"Ctrl+g        Toggle Git indicators",
+	"?             Open / close shortcuts",
+	"Space         Select and exit",
+	"q / Ctrl+c    Exit",
 }
 
 func loadColumn(path, filter string, hidden bool, order int, selected string) (column, error) {
@@ -191,7 +191,7 @@ func (m *model) follow() {
 		return
 	}
 	if e.info == nil || !e.info.IsDir() {
-		m.message = "Não é um diretório"
+		m.message = "Not a directory"
 		return
 	}
 	path := filepath.Join(c.path, e.name)
@@ -347,15 +347,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "v", "e", "d":
 			e := c.chosen()
 			if e == nil {
-				m.message = "Nenhum item selecionado"
+				m.message = "No item selected"
 				break
 			}
 			if e.err != nil || e.info == nil {
-				m.message = "Item inacessível"
+				m.message = "Item is inaccessible"
 				break
 			}
 			if key != "d" && !e.info.Mode().IsRegular() {
-				m.message = "Selecione um arquivo comum"
+				m.message = "Select a regular file"
 				break
 			}
 			return m, externalCommand(key, filepath.Join(c.path, e.name), c.path)
@@ -468,13 +468,13 @@ func humanSize(size int64) string {
 
 func preview(path string, e *entry) []string {
 	if e == nil {
-		return []string{"(vazio)"}
+		return []string{"(empty)"}
 	}
 	lines := []string{e.name}
 	if e.link {
-		lines = append(lines, "Link simbólico")
+		lines = append(lines, "Symbolic link")
 		if target, err := os.Readlink(filepath.Join(path, e.name)); err == nil {
-			lines = append(lines, "Destino: "+strings.Map(func(r rune) rune {
+			lines = append(lines, "Target: "+strings.Map(func(r rune) rune {
 				if unicode.IsControl(r) {
 					return '�'
 				}
@@ -483,29 +483,29 @@ func preview(path string, e *entry) []string {
 		}
 	}
 	if e.err != nil {
-		return append(lines, "Erro: "+e.err.Error())
+		return append(lines, "Error: "+e.err.Error())
 	}
 	if e.info == nil {
 		return lines
 	}
-	typeName := "Especial"
+	typeName := "Special"
 	if e.info.IsDir() {
-		typeName = "Diretório"
+		typeName = "Directory"
 	} else if e.info.Mode().IsRegular() {
-		typeName = "Arquivo comum"
+		typeName = "Regular file"
 	}
-	lines = append(lines, "Tipo: "+typeName, "Tamanho: "+humanSize(e.info.Size()), "Modificado: "+e.info.ModTime().Format("2006-01-02 15:04"), "Permissões: "+e.info.Mode().String())
+	lines = append(lines, "Type: "+typeName, "Size: "+humanSize(e.info.Size()), "Modified: "+e.info.ModTime().Format("2006-01-02 15:04"), "Permissions: "+e.info.Mode().String())
 	if !e.info.Mode().IsRegular() {
 		return lines
 	}
 	f, err := os.Open(filepath.Join(path, e.name))
 	if err != nil {
-		return append(lines, "Erro: "+err.Error())
+		return append(lines, "Error: "+err.Error())
 	}
 	defer f.Close()
 	data, err := io.ReadAll(io.LimitReader(f, previewLimit+1))
 	if err != nil {
-		return append(lines, "Erro: "+err.Error())
+		return append(lines, "Error: "+err.Error())
 	}
 	truncated := len(data) > previewLimit
 	if truncated {
@@ -513,7 +513,7 @@ func preview(path string, e *entry) []string {
 	}
 	if bytes.IndexByte(data, 0) >= 0 || !utf8.Valid(data) {
 		mime := http.DetectContentType(data)
-		return append(lines, "", "Conteúdo detectado: "+mime, "(arquivo binário ou texto não suportado)")
+		return append(lines, "", "Detected content: "+mime, "(binary file or unsupported text)")
 	}
 	text := strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\t' || !unicode.IsControl(r) {
@@ -524,7 +524,7 @@ func preview(path string, e *entry) []string {
 	lines = append(lines, "")
 	lines = append(lines, strings.Split(strings.ReplaceAll(text, "\t", "    "), "\n")...)
 	if truncated {
-		lines = append(lines, "(prévia truncada em 256 KiB)")
+		lines = append(lines, "(preview truncated at 256 KiB)")
 	}
 	return lines
 }
@@ -545,15 +545,15 @@ func (m model) View() string {
 	if m.fullPreview {
 		return m.previewView()
 	}
-	orders := []string{"nome", "tamanho", "data"}
-	header := fit(m.current().path+"  | ordem: "+orders[m.order], m.width)
-	footer := "? atalhos  Espaço selecionar  ↑↓/jk mover  ←→/hl entrar/voltar  q sair"
+	orders := []string{"name", "size", "date"}
+	header := fit(m.current().path+"  | sort: "+orders[m.order], m.width)
+	footer := "? shortcuts  Space select  ↑↓/jk move  ←→/hl enter/back  q quit"
 	if m.editing {
 		footer = "/" + m.current().filter + "_"
 	} else if m.message != "" {
 		footer = m.message
 	} else if m.current().filter != "" {
-		footer = "Filtro: " + m.current().filter + "  (Esc limpa)  " + footer
+		footer = "Filter: " + m.current().filter + "  (Esc clears)  " + footer
 	}
 	if m.height == 1 {
 		return header
@@ -722,7 +722,7 @@ func (m model) previewView() string {
 		}
 		rows = append(rows, fit(text, m.width))
 	}
-	footer := "P/Esc voltar  p ocultar prévia  PgUp/PgDown rolar  ? atalhos"
+	footer := "P/Esc back  p hide preview  PgUp/PgDown scroll  ? shortcuts"
 	if m.editing {
 		footer = "/" + m.current().filter + "_"
 	} else if m.message != "" {
@@ -732,7 +732,7 @@ func (m model) previewView() string {
 }
 
 func (m model) helpView() string {
-	rows := []string{fit("Atalhos", m.width)}
+	rows := []string{fit("Shortcuts", m.width)}
 	if m.height == 1 {
 		return rows[0]
 	}
@@ -745,7 +745,7 @@ func (m model) helpView() string {
 		}
 		rows = append(rows, fit(line, m.width))
 	}
-	rows = append(rows, fit("↑↓/jk ou PgUp/PgDown rolar  ?/Esc fechar", m.width))
+	rows = append(rows, fit("↑↓/jk or PgUp/PgDown scroll  ?/Esc close", m.width))
 	return strings.Join(rows, "\n")
 }
 
@@ -753,16 +753,16 @@ func main() {
 	for _, arg := range os.Args[1:] {
 		if arg == "--help" {
 			fmt.Printf(`fastfile %s
-Uso: fastfile [--allow-parent] [--reload] [--git] [--help] [diretório]
+Usage: fastfile [--allow-parent] [--reload] [--git] [--help] [directory]
 
-Argumento:
-  diretório       Diretório inicial (padrão: diretório atual).
+Argument:
+  directory       Starting directory (default: current directory).
 
-Opções:
-  --allow-parent  Permite navegar acima do diretório inicial.
-  --reload        Atualiza a listagem e os estados Git ativos a cada 5 segundos.
-  --git           Ativa os indicadores de estado Git.
-  --help          Exibe esta ajuda e a versão.
+Options:
+  --allow-parent  Allow navigation above the starting directory.
+  --reload        Refresh the listing and active Git statuses every 5 seconds.
+  --git           Enable Git status indicators.
+  --help          Show this help and the version.
 `, version)
 			return
 		}
@@ -779,7 +779,7 @@ Opções:
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Uso: fastfile [--allow-parent] [--reload] [--git] [--help] [diretório]")
+			fmt.Fprintln(os.Stderr, "Usage: fastfile [--allow-parent] [--reload] [--git] [--help] [directory]")
 			os.Exit(2)
 		}
 	}
@@ -799,7 +799,7 @@ Opções:
 	}
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "terminal indisponível:", err)
+		fmt.Fprintln(os.Stderr, "terminal unavailable:", err)
 		os.Exit(1)
 	}
 	defer tty.Close()

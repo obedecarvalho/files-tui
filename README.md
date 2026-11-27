@@ -1,69 +1,69 @@
 # Fastfile
 
-Navegador de arquivos para Linux em Go, com colunas Miller e prévia de arquivos.
+A Linux file browser written in Go, with Miller columns and file previews.
 
-## Instalação e execução
+## Installation and usage
 
-Para baixar a release mais recente para Linux AMD64:
+To download the latest release for Linux AMD64:
 
 ```sh
 VERSION=$(curl -fsSL https://api.github.com/repos/obedecarvalho/fastfile/releases/latest | grep '"tag_name":' | cut -d '"' -f 4)
 curl -fL -o fastfile "https://github.com/obedecarvalho/fastfile/releases/download/${VERSION}/fastfile-linux-${VERSION}-amd64"
 ```
 
-Para Linux ARM64, substitua `amd64` por `arm64` no comando de download.
+For Linux ARM64, replace `amd64` with `arm64` in the download command.
 
 ```sh
 chmod +x fastfile
 ./fastfile
 ```
 
-Para abrir outro diretório, execute `./fastfile /home`. Use `./fastfile --help` para ver as opções disponíveis e `?` durante a navegação para consultar os atalhos.
+To open another directory, run `./fastfile /home`. Use `./fastfile --help` to see the available options and `?` while browsing to see the shortcuts.
 
-Para executar `fastfile` de qualquer diretório, instale-o em `$HOME/.local/bin`:
+To run `fastfile` from any directory, install it in `$HOME/.local/bin`:
 
 ```sh
 mkdir -p "$HOME/.local/bin"
 mv fastfile "$HOME/.local/bin/fastfile"
 ```
 
-Se `$HOME/.local/bin` ainda não estiver no `PATH`, adicione a linha abaixo ao arquivo de configuração do seu shell (por exemplo, `~/.bashrc` ou `~/.zshrc`) e abra um novo terminal:
+If `$HOME/.local/bin` is not already in your `PATH`, add the following line to your shell configuration file (for example, `~/.bashrc` or `~/.zshrc`) and open a new terminal:
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Então execute `fastfile` ou `fastfile /home`.
+Then run `fastfile` or `fastfile /home`.
 
-## Controles
+## Controls
 
-| Tecla | Ação |
+| Key | Action |
 | --- | --- |
-| ↑/↓ ou k/j | Mover seleção |
-| →, l ou Enter | Entrar no diretório |
-| ←, h ou Backspace | Voltar ao diretório pai |
-| g / G | Primeiro / último item |
-| [ / ] | Deslocar colunas manualmente |
-| Page Up / Page Down | Rolar prévia em até três linhas |
-| p | Mostrar ou ocultar a prévia |
-| P / Esc | Ampliar ou restaurar a prévia |
-| . | Alternar arquivos ocultos |
-| / | Filtrar nomes; Enter confirma e Esc limpa |
-| s | Alternar ordenação por nome, tamanho e data |
-| r | Atualizar listagem |
-| v | Visualizar arquivo com $PAGER |
-| e | Editar arquivo com $EDITOR |
-| d | Mostrar diferenças Git do item selecionado |
-| Ctrl+g | Alternar indicadores Git |
-| ? | Abrir ou fechar a lista de atalhos; Esc também fecha |
-| Espaço | Selecionar o item em foco e sair |
-| q ou Ctrl+C | Sair |
+| ↑/↓ or k/j | Move selection |
+| →, l or Enter | Enter directory |
+| ←, h or Backspace | Go to parent directory |
+| g / G | First / last item |
+| [ / ] | Shift columns manually |
+| Page Up / Page Down | Scroll preview by up to three lines |
+| p | Show or hide preview |
+| P / Esc | Expand or restore preview |
+| . | Toggle hidden files |
+| / | Filter names; Enter confirms and Esc clears |
+| s | Change sort order between name, size and date |
+| r | Refresh listing |
+| v | View file with $PAGER |
+| e | Edit file with $EDITOR |
+| d | Show Git differences for the selected item |
+| Ctrl+g | Toggle Git indicators |
+| ? | Open or close shortcuts; Esc also closes them |
+| Space | Select the focused item and exit |
+| q or Ctrl+C | Exit |
 
-Na lista de atalhos, use ↑/↓, k/j ou Page Up/Page Down para rolar.
+In the shortcuts list, use ↑/↓, k/j or Page Up/Page Down to scroll.
 
-Configure editor, visualizador e diff Git em `$HOME/.config/fastfile.conf`; veja os [detalhes de configuração](DOCS.md#configuração-de-programas-externos).
+Configure the editor, pager and Git diff tool in `$HOME/.config/fastfile.conf`; see [configuration details](DOCS.md#external-program-configuration).
 
-## Documentação
+## Documentation
 
-- [Uso, controles e funcionalidades](DOCS.md)
-- [Compilação e desenvolvimento](DEV.md)
+- [Usage, controls and features](DOCS.md)
+- [Building and development](DEV.md)

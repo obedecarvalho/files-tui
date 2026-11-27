@@ -33,7 +33,7 @@ func TestConfiguredCommand(t *testing.T) {
 	}
 	check("e", []string{"vim"})
 	check("v", []string{"less"})
-	if _, err := configuredCommand("d"); err == nil || !strings.Contains(err.Error(), "git_diff não está definido") {
+	if _, err := configuredCommand("d"); err == nil || !strings.Contains(err.Error(), "git_diff is not set") {
 		t.Fatalf("expected missing diff configuration: %v", err)
 	}
 	if err := os.Mkdir(filepath.Join(home, ".config"), 0755); err != nil {

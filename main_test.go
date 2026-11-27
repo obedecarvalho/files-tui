@@ -24,12 +24,12 @@ func TestHelp(t *testing.T) {
 	}
 	for _, want := range []string{
 		"fastfile " + version,
-		"Uso: fastfile",
-		"diretório       Diretório inicial (padrão: diretório atual).",
-		"--allow-parent  Permite navegar acima do diretório inicial.",
-		"--reload        Atualiza a listagem e os estados Git ativos a cada 5 segundos.",
-		"--git           Ativa os indicadores de estado Git.",
-		"--help          Exibe esta ajuda e a versão.",
+		"Usage: fastfile",
+		"directory       Starting directory (default: current directory).",
+		"--allow-parent  Allow navigation above the starting directory.",
+		"--reload        Refresh the listing and active Git statuses every 5 seconds.",
+		"--git           Enable Git status indicators.",
+		"--help          Show this help and the version.",
 	} {
 		if !strings.Contains(string(output), want) {
 			t.Errorf("help missing %q: %s", want, output)
@@ -49,7 +49,7 @@ func TestShortcutHelp(t *testing.T) {
 	}
 	question := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")}
 	press(question)
-	if !m.showHelp || !strings.Contains(m.View(), "Atalhos") {
+	if !m.showHelp || !strings.Contains(m.View(), "Shortcuts") {
 		t.Fatal("shortcut help did not open")
 	}
 	for i := 0; i < len(helpLines); i++ {
@@ -139,7 +139,7 @@ func TestNavigationFilterAndPreview(t *testing.T) {
 
 func TestPreviewScrollIsBounded(t *testing.T) {
 	d := t.TempDir()
-	if err := os.WriteFile(filepath.Join(d, "file"), []byte(strings.Repeat("linha\n", 20)), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(d, "file"), []byte(strings.Repeat("line\n", 20)), 0644); err != nil {
 		t.Fatal(err)
 	}
 	c, err := loadColumn(d, "", false, 0, "")
@@ -155,7 +155,7 @@ func TestPreviewScrollIsBounded(t *testing.T) {
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
 	m = updated.(model)
 	if m.previewOffset != end-3 {
-		t.Fatalf("rolagem para cima: %d, esperado %d", m.previewOffset, end-3)
+		t.Fatalf("scroll up: %d, expected %d", m.previewOffset, end-3)
 	}
 }
 
@@ -172,8 +172,8 @@ func TestPreviewMetadataAndBinary(t *testing.T) {
 		name string
 		want []string
 	}{
-		{"image", []string{"Tipo: Arquivo comum", "Tamanho: 2.0 KiB (2056 bytes)", "Conteúdo detectado: image/png", "arquivo binário"}},
-		{"link", []string{"Link simbólico", "Destino: image", "image/png"}},
+		{"image", []string{"Type: Regular file", "Size: 2.0 KiB (2056 bytes)", "Detected content: image/png", "binary file"}},
+		{"link", []string{"Symbolic link", "Target: image", "image/png"}},
 	} {
 		c, err := loadColumn(d, tc.name, false, 0, tc.name)
 		if err != nil {
@@ -222,7 +222,7 @@ func TestTogglePreview(t *testing.T) {
 
 func TestFullPreview(t *testing.T) {
 	d := t.TempDir()
-	if err := os.WriteFile(filepath.Join(d, "file"), []byte("conteúdo da prévia"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(d, "file"), []byte("preview content"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	c, err := loadColumn(d, "", false, 0, "")
@@ -233,7 +233,7 @@ func TestFullPreview(t *testing.T) {
 	key := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("P")}
 	updated, _ := m.Update(key)
 	m = updated.(model)
-	if !m.fullPreview || m.hidePreview || !strings.Contains(m.View(), "conteúdo da prévia") || strings.Contains(m.View(), "┌") {
+	if !m.fullPreview || m.hidePreview || !strings.Contains(m.View(), "preview content") || strings.Contains(m.View(), "┌") {
 		t.Fatal("P should display only the expanded preview")
 	}
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})

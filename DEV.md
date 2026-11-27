@@ -1,25 +1,25 @@
-# Desenvolvimento
+# Development
 
-## Requisitos
+## Requirements
 
-Linux, Go 1.26.4 ou posterior e acesso à internet para baixar as dependências na primeira compilação. Para usar as receitas abaixo, instale também o `just`.
+Linux, Go 1.26.4 or later, and internet access to download dependencies on the first build. Install `just` to use the recipes below.
 
-## Compilar e executar
+## Build and run
 
-Na raiz do projeto, execute:
+From the project root, run:
 
 ```sh
 just build
 ./bin/fastfile
 ```
 
-Também é possível executar sem gerar um binário com `just run` ou `just run /home`.
-Compilações locais exibem a versão `dev` em `--help`; nas releases, a versão corresponde à tag.
+You can also run without building a binary using `just run` or `just run /home`.
+Local builds show the version `dev` in `--help`; release versions match the tag.
 
-## Testes e verificações
+## Tests and checks
 
-Execute todos os testes com `just test` ou veja os testes individualmente com `go test -v ./...`. Use `just vet` para a análise estática, `just fmt` para formatar o código e `just check` para verificar a formatação, executar a análise estática e rodar os testes. Execute `just --list` para listar as receitas disponíveis.
+Run all tests with `just test` or see individual tests with `go test -v ./...`. Use `just vet` for static analysis, `just fmt` to format the code, and `just check` to check formatting, run static analysis and run tests. Run `just --list` to list the available recipes.
 
 ## Releases
 
-Ao enviar uma nova tag, o GitHub Actions verifica a formatação, executa a análise estática e os testes, compila os binários para Linux AMD64 e ARM64 e cria uma release com eles.
+When a new tag is pushed, GitHub Actions checks formatting, runs static analysis and tests, builds Linux AMD64 and ARM64 binaries, and creates a release with them.

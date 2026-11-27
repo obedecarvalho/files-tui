@@ -45,6 +45,8 @@ Então execute `fastfile` ou `fastfile /home`.
 | g / G | Primeiro / último item |
 | [ / ] | Deslocar colunas manualmente |
 | Page Up / Page Down | Rolar prévia em até três linhas |
+| p | Mostrar ou ocultar a prévia |
+| P / Esc | Ampliar ou restaurar a prévia |
 | . | Alternar arquivos ocultos |
 | / | Filtrar nomes; Enter confirma e Esc limpa |
 | s | Alternar ordenação por nome, tamanho e data |

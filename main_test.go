@@ -159,6 +159,109 @@ func TestPreviewScrollIsBounded(t *testing.T) {
 	}
 }
 
+func TestPreviewMetadataAndBinary(t *testing.T) {
+	d := t.TempDir()
+	data := append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, 2048)...)
+	if err := os.WriteFile(filepath.Join(d, "image"), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("image", filepath.Join(d, "link")); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name string
+		want []string
+	}{
+		{"image", []string{"Tipo: Arquivo comum", "Tamanho: 2.0 KiB (2056 bytes)", "Conteúdo detectado: image/png", "arquivo binário"}},
+		{"link", []string{"Link simbólico", "Destino: image", "image/png"}},
+	} {
+		c, err := loadColumn(d, tc.name, false, 0, tc.name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := strings.Join(preview(d, c.chosen()), "\n")
+		for _, want := range tc.want {
+			if !strings.Contains(got, want) {
+				t.Errorf("%s: missing %q in %s", tc.name, want, got)
+			}
+		}
+	}
+}
+
+func TestTogglePreview(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(filepath.Join(d, "file"), []byte("unique preview content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := loadColumn(d, "", false, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}, start: -1, width: 120, height: 20}
+	key := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("p")}
+	if !strings.Contains(m.View(), "unique preview content") {
+		t.Fatal("preview should be enabled by default")
+	}
+	updated, _ := m.Update(key)
+	m = updated.(model)
+	if strings.Contains(m.View(), "unique preview content") {
+		t.Fatal("preview should be hidden")
+	}
+	updated, _ = m.Update(key)
+	m = updated.(model)
+	if !strings.Contains(m.View(), "unique preview content") {
+		t.Fatal("preview should be visible again")
+	}
+	m.editing = true
+	updated, _ = m.Update(key)
+	m = updated.(model)
+	if m.hidePreview || m.current().filter != "p" {
+		t.Fatal("p should remain usable in filters")
+	}
+}
+
+func TestFullPreview(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(filepath.Join(d, "file"), []byte("conteúdo da prévia"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := loadColumn(d, "", false, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := model{columns: []column{c}, start: -1, width: 40, height: 12, hidePreview: true}
+	key := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("P")}
+	updated, _ := m.Update(key)
+	m = updated.(model)
+	if !m.fullPreview || m.hidePreview || !strings.Contains(m.View(), "conteúdo da prévia") || strings.Contains(m.View(), "┌") {
+		t.Fatal("P should display only the expanded preview")
+	}
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	m = updated.(model)
+	if cmd != nil || !m.fullPreview {
+		t.Fatal("q should not quit while the expanded preview is open")
+	}
+	updated, _ = m.Update(key)
+	m = updated.(model)
+	if m.fullPreview || !strings.Contains(m.View(), "┌") {
+		t.Fatal("P should restore the normal layout")
+	}
+	updated, _ = m.Update(key)
+	m = updated.(model)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updated.(model)
+	if m.fullPreview {
+		t.Fatal("escape should close the expanded preview")
+	}
+	updated, _ = m.Update(key)
+	m = updated.(model)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("p")})
+	m = updated.(model)
+	if m.fullPreview || !m.hidePreview {
+		t.Fatal("p should hide the expanded preview")
+	}
+}
+
 func TestLookaheadAndPreservedColumns(t *testing.T) {
 	d := t.TempDir()
 	if err := os.Mkdir(filepath.Join(d, "child"), 0755); err != nil {

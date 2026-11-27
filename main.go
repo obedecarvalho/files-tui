@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -39,13 +40,15 @@ type model struct {
 	columns                                    []column
 	git                                        map[string]gitStatus
 	focus                                      int
-	allowParent                                     bool
+	allowParent                                bool
 	reload                                     bool
 	showGit                                    bool
 	hidden                                     bool
 	order, width, height, start, previewOffset int
 	editing                                    bool
 	showHelp                                   bool
+	hidePreview                                bool
+	fullPreview                                bool
 	helpOffset                                 int
 	selected                                   bool
 	message                                    string
@@ -58,6 +61,8 @@ var helpLines = []string{
 	"g / G         Primeiro / último item",
 	"[ / ]         Deslocar colunas",
 	"Page Up / Page Down   Rolar prévia",
+	"p             Mostrar / ocultar prévia",
+	"P / Esc       Ampliar / restaurar prévia",
 	".             Alternar arquivos ocultos",
 	"/             Filtrar nomes",
 	"Enter / Esc   Confirmar / limpar filtro",
@@ -325,6 +330,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.fullPreview && key == "esc" {
+			m.fullPreview = false
+			return m, nil
+		}
+		if m.fullPreview && key == "q" {
+			return m, nil
+		}
 		m.message = ""
 		c := m.current()
 		oldSelection := ""
@@ -401,6 +413,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.previewOffset = min(m.previewOffset+3, max(0, len(lines)-max(1, m.height-2)))
 		case "pgup":
 			m.previewOffset = max(0, m.previewOffset-3)
+		case "p":
+			if m.fullPreview {
+				m.fullPreview = false
+				m.hidePreview = true
+			} else {
+				m.hidePreview = !m.hidePreview
+			}
+		case "P":
+			m.fullPreview = !m.fullPreview
+			if m.fullPreview {
+				m.hidePreview = false
+			}
 		case "[":
 			if m.start < 0 {
 				m.start = m.autoStart()
@@ -428,6 +452,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) slots() int     { return max(1, m.width/24) }
 func (m model) autoStart() int { return max(0, m.focus+3-m.slots()) }
 
+func humanSize(size int64) string {
+	if size < 1024 {
+		return fmt.Sprintf("%d bytes", size)
+	}
+	value := float64(size)
+	units := []string{"bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"}
+	i := 0
+	for value >= 1024 && i < len(units)-1 {
+		value /= 1024
+		i++
+	}
+	return fmt.Sprintf("%.1f %s (%d bytes)", value, units[i], size)
+}
+
 func preview(path string, e *entry) []string {
 	if e == nil {
 		return []string{"(vazio)"}
@@ -435,6 +473,14 @@ func preview(path string, e *entry) []string {
 	lines := []string{e.name}
 	if e.link {
 		lines = append(lines, "Link simbólico")
+		if target, err := os.Readlink(filepath.Join(path, e.name)); err == nil {
+			lines = append(lines, "Destino: "+strings.Map(func(r rune) rune {
+				if unicode.IsControl(r) {
+					return '�'
+				}
+				return r
+			}, target))
+		}
 	}
 	if e.err != nil {
 		return append(lines, "Erro: "+e.err.Error())
@@ -442,7 +488,13 @@ func preview(path string, e *entry) []string {
 	if e.info == nil {
 		return lines
 	}
-	lines = append(lines, fmt.Sprintf("Tamanho: %d bytes", e.info.Size()), "Modificado: "+e.info.ModTime().Format("2006-01-02 15:04"), "Permissões: "+e.info.Mode().String())
+	typeName := "Especial"
+	if e.info.IsDir() {
+		typeName = "Diretório"
+	} else if e.info.Mode().IsRegular() {
+		typeName = "Arquivo comum"
+	}
+	lines = append(lines, "Tipo: "+typeName, "Tamanho: "+humanSize(e.info.Size()), "Modificado: "+e.info.ModTime().Format("2006-01-02 15:04"), "Permissões: "+e.info.Mode().String())
 	if !e.info.Mode().IsRegular() {
 		return lines
 	}
@@ -460,7 +512,8 @@ func preview(path string, e *entry) []string {
 		data = data[:previewLimit]
 	}
 	if bytes.IndexByte(data, 0) >= 0 || !utf8.Valid(data) {
-		return append(lines, "", "(arquivo binário ou texto não suportado)")
+		mime := http.DetectContentType(data)
+		return append(lines, "", "Conteúdo detectado: "+mime, "(arquivo binário ou texto não suportado)")
 	}
 	text := strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\t' || !unicode.IsControl(r) {
@@ -488,6 +541,9 @@ func (m model) View() string {
 	}
 	if m.showHelp {
 		return m.helpView()
+	}
+	if m.fullPreview {
+		return m.previewView()
 	}
 	orders := []string{"nome", "tamanho", "data"}
 	header := fit(m.current().path+"  | ordem: "+orders[m.order], m.width)
@@ -517,7 +573,7 @@ func (m model) View() string {
 	}
 	start = min(start, len(columns)-1)
 	count := min(slots, len(columns)-start)
-	showPreview := start+count == len(columns) && slots > count
+	showPreview := !m.hidePreview && start+count == len(columns) && slots > count
 	if showPreview {
 		count++
 	}
@@ -650,6 +706,31 @@ func (m model) View() string {
 	}() + fit(footer, m.width)
 }
 
+func (m model) previewView() string {
+	header := fit(m.selectedPath(), m.width)
+	if m.height == 1 {
+		return header
+	}
+	lines := preview(m.current().path, m.current().chosen())
+	height := max(0, m.height-2)
+	offset := min(m.previewOffset, max(0, len(lines)-height))
+	rows := []string{header}
+	for row := 0; row < height; row++ {
+		text := ""
+		if offset+row < len(lines) {
+			text = lines[offset+row]
+		}
+		rows = append(rows, fit(text, m.width))
+	}
+	footer := "P/Esc voltar  p ocultar prévia  PgUp/PgDown rolar  ? atalhos"
+	if m.editing {
+		footer = "/" + m.current().filter + "_"
+	} else if m.message != "" {
+		footer = m.message
+	}
+	return strings.Join(append(rows, fit(footer, m.width)), "\n")
+}
+
 func (m model) helpView() string {
 	rows := []string{fit("Atalhos", m.width)}
 	if m.height == 1 {
@@ -716,7 +797,13 @@ Opções:
 	if m.showGit {
 		m.refreshGit()
 	}
-	final, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "terminal indisponível:", err)
+		os.Exit(1)
+	}
+	defer tty.Close()
+	final, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithInput(tty), tea.WithOutput(tty)).Run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

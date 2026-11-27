@@ -1,4 +1,4 @@
-# Files TUI
+# Fastfile
 
 Navegador de arquivos para Linux em Go, com colunas Miller e prévia de arquivos.
 
@@ -7,27 +7,27 @@ Navegador de arquivos para Linux em Go, com colunas Miller e prévia de arquivos
 Baixe o arquivo mais recente:
 
 ```sh
-curl -fL -o files-tui https://github.com/obedecarvalho/files-tui/releases/latest/download/files-tui-linux-amd64
+curl -fL -o fastfile https://github.com/obedecarvalho/fastfile/releases/latest/download/fastfile-linux-amd64
 ```
 
 ```sh
-chmod +x files-tui
-./files-tui
+chmod +x fastfile
+./fastfile
 ```
 
 Para compilar o projeto ou contribuir com o desenvolvimento, consulte [DEV.md](DEV.md).
 
-Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./files-tui /home`.
+Para abrir outro diretório, passe seu caminho como argumento, por exemplo `./fastfile /home`.
 
-Use `./files-tui --help` para exibir a versão e as opções disponíveis.
+Use `./fastfile --help` para exibir a versão e as opções disponíveis.
 
 Sem argumento, abre o diretório atual. A navegação não altera arquivos nem executa arquivos selecionados; o atalho `e` abre um editor que pode alterá-los.
 
-Por padrão, não é possível voltar acima do diretório inicial. Use `./files-tui --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
+Por padrão, não é possível voltar acima do diretório inicial. Use `./fastfile --no-root /home` para permitir navegar até os diretórios pais. Essa limitação é de navegação, não uma barreira de segurança contra links simbólicos.
 
 Pressione `Espaço` para sair e escrever o caminho absoluto do item em foco na saída padrão. Se não houver item selecionado, é escrito o caminho do diretório atual. Ao sair com `q` ou `Ctrl+C`, nenhum caminho é escrito.
 
-Use `--reload` para atualizar automaticamente a listagem e, quando ativados, os estados Git a cada 5 segundos, por exemplo `./files-tui --reload /home`.
+Use `--reload` para atualizar automaticamente a listagem e, quando ativados, os estados Git a cada 5 segundos, por exemplo `./fastfile --reload /home`.
 
 Os indicadores Git ficam desativados por padrão. Use `--git` para ativá-los ao iniciar ou pressione `Ctrl+g` para alterná-los durante a navegação.
 

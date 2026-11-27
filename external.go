@@ -118,7 +118,7 @@ func (t *externalTool) diff(tty *os.File) error {
 	if err != nil {
 		return err
 	}
-	file, err := os.CreateTemp("", "files-tui-diff-*.txt")
+	file, err := os.CreateTemp("", "fastfile-diff-*.txt")
 	if err != nil {
 		return err
 	}

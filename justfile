@@ -2,9 +2,9 @@
 default:
     @just --list
 
-# Compila o aplicativo em bin/files-tui.
+# Compila o aplicativo em bin/fastfile.
 build:
-    go build -o bin/files-tui .
+    go build -o bin/fastfile .
 
 # Executa os testes.
 test:

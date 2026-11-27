@@ -10,7 +10,7 @@ Na raiz do projeto, execute:
 
 ```sh
 just build
-./bin/files-tui
+./bin/fastfile
 ```
 
 Também é possível executar sem gerar um binário com `just run` ou `just run /home`.

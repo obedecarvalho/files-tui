@@ -671,7 +671,7 @@ func (m model) helpView() string {
 func main() {
 	for _, arg := range os.Args[1:] {
 		if arg == "--help" {
-			fmt.Printf("files-tui %s\nUso: files-tui [--no-root] [--reload] [--git] [--help] [diretório]\n", version)
+			fmt.Printf("fastfile %s\nUso: fastfile [--no-root] [--reload] [--git] [--help] [diretório]\n", version)
 			return
 		}
 	}
@@ -687,7 +687,7 @@ func main() {
 		} else if !hasPath && !strings.HasPrefix(arg, "-") {
 			path, hasPath = arg, true
 		} else {
-			fmt.Fprintln(os.Stderr, "Uso: files-tui [--no-root] [--reload] [--git] [--help] [diretório]")
+			fmt.Fprintln(os.Stderr, "Uso: fastfile [--no-root] [--reload] [--git] [--help] [diretório]")
 			os.Exit(2)
 		}
 	}

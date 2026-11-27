@@ -1,4 +1,4 @@
-module files-tui
+module fastfile
 
 go 1.26.4
 
